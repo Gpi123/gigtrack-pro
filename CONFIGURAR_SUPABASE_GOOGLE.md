@@ -31,8 +31,8 @@ Você precisa ir para a página onde configura o **Google como provedor OAuth** 
 1. Encontre **"Google"** na lista de provedores
 2. Clique no **toggle** para habilitar o Google (deve ficar verde/azul)
 3. Preencha os campos:
-   - **Client ID (for OAuth)**: `584345205550-did9nod8jpriuo7s7ri1ukqnb0sh89oa.apps.googleusercontent.com`
-   - **Client Secret (for OAuth)**: `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`
+   - **Client ID (for OAuth)**: (cole seu Client ID aqui)
+   - **Client Secret (for OAuth)**: (cole seu Client Secret aqui)
 4. Clique em **"Save"** ou **"Salvar"**
 
 ---

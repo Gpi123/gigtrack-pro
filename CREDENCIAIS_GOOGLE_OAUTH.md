@@ -2,15 +2,11 @@
 
 ## ✅ Client ID (ID do Cliente)
 
-```
-584345205550-did9nod8jpriuo7s7ri1ukqnb0sh89oa.apps.googleusercontent.com
-```
+⚠️ **Credenciais removidas por segurança. Consulte suas configurações locais.**
 
 ## ✅ Client Secret (Segredo do Cliente)
 
-```
-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
-```
+⚠️ **Credenciais removidas por segurança. Consulte suas configurações locais.**
 
 ---
 
@@ -24,8 +20,8 @@ Depois de ter o Client ID e Client Secret:
 4. Encontre **"Google"** na lista
 5. Clique no toggle para **habilitar**
 6. Preencha:
-   - **Client ID (for OAuth)**: `584345205550-did9nod8jpriuo7s7ri1ukqnb0sh89oa.apps.googleusercontent.com`
-   - **Client Secret (for OAuth)**: `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`
+   - **Client ID (for OAuth)**: (cole seu Client ID aqui)
+   - **Client Secret (for OAuth)**: (cole seu Client Secret aqui)
 7. Clique em **"Save"**
 
 ---
