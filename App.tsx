@@ -258,10 +258,10 @@ const App: React.FC = () => {
         syncId=""
         onSetSyncId={() => {}}
         lastSync={0}
-        onCloudSync={handleCloudSync}
+        onCloudSync={() => {}}
         onImportCloud={() => {}}
-        isSyncing={isSyncing}
-        onExportBackup={handleExportBackup}
+        isSyncing={false}
+        onExportBackup={() => {}}
         onGenerateInsights={generateInsights}
         isAnalyzing={isAnalyzing}
         insights={insights}
