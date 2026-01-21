@@ -36,6 +36,17 @@ const App: React.FC = () => {
 
   // Carregar dados do Supabase quando usuário estiver autenticado
   useEffect(() => {
+    // Verificar se há hash de autenticação na URL (após redirect do OAuth)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const error = hashParams.get('error');
+    
+    if (error) {
+      console.error('Erro na autenticação:', error);
+      setLoading(false);
+      return;
+    }
+
     const loadUser = async () => {
       const currentUser = await authService.getCurrentUser();
       setUser(currentUser);
@@ -44,6 +55,10 @@ const App: React.FC = () => {
         const profile = await authService.getUserProfile(currentUser.id);
         setUserProfile(profile);
         await loadGigs();
+        // Limpar hash da URL após processar
+        if (accessToken) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
       } else {
         setLoading(false);
       }
@@ -58,6 +73,10 @@ const App: React.FC = () => {
         const profile = await authService.getUserProfile(user.id);
         setUserProfile(profile);
         await loadGigs();
+        // Limpar hash da URL após processar
+        if (window.location.hash.includes('access_token')) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
       } else {
         setGigs([]);
         setLoading(false);

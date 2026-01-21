@@ -20,10 +20,14 @@ export const authService = {
   // Sign in with Google
   signInWithGoogle: async () => {
     const client = checkSupabase();
+    // Use current origin (works for both localhost and production)
+    // Remove hash/fragment to avoid issues
+    const redirectTo = window.location.origin + window.location.pathname;
+    
     const { data, error } = await client.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: redirectTo,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
