@@ -207,6 +207,30 @@ const App: React.FC = () => {
     a.click();
   };
 
+  // Se não estiver autenticado, mostrar apenas tela de login
+  if (!user && !loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="bg-indigo-600 p-4 rounded-2xl inline-block mb-4">
+              <Calendar className="w-12 h-12 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">GigTrack <span className="text-indigo-500">Pro</span></h1>
+            <p className="text-slate-400">Sua agenda de shows profissional</p>
+          </div>
+          <AuthModal 
+            isOpen={true} 
+            onClose={() => {}} 
+            user={null}
+            profile={null}
+            onAuthChange={setUser}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pb-20 md:pb-8 bg-slate-950 text-slate-200">
       <SideMenu 
@@ -243,18 +267,14 @@ const App: React.FC = () => {
             <button 
               onClick={() => setIsAuthModalOpen(true)} 
               className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors"
-              title={user ? 'Minha Conta' : 'Entrar'}
+              title="Minha Conta"
             >
-              <User size={20} className={user ? 'text-indigo-500' : ''} />
+              <User size={20} className="text-indigo-500" />
             </button>
             <button 
               onClick={() => { 
-                if (!user) {
-                  setIsAuthModalOpen(true);
-                } else {
-                  setEditingGig(null); 
-                  setIsModalOpen(true); 
-                }
+                setEditingGig(null); 
+                setIsModalOpen(true); 
               }} 
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
             >

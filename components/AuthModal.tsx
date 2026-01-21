@@ -50,24 +50,27 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
     }
   };
 
-  if (!isOpen) return null;
+  // Se isOpen for false mas não houver usuário, ainda mostrar (para tela de login inicial)
+  if (!isOpen && user) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className={`${isOpen ? 'fixed' : 'relative'} inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'bg-black/80 backdrop-blur-sm' : ''} animate-in fade-in duration-200`}>
       <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <UserIcon size={20} />
-            {user ? 'Minha Conta' : 'Entrar'}
-          </h2>
-          <button 
-            onClick={onClose} 
-            className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
-            disabled={isLoading}
-          >
-            <X size={20} />
-          </button>
-        </div>
+        {isOpen && (
+          <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <UserIcon size={20} />
+              {user ? 'Minha Conta' : 'Entrar'}
+            </h2>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+              disabled={isLoading}
+            >
+              <X size={20} />
+            </button>
+          </div>
+        )}
 
         <div className="p-6 space-y-4">
           {error && (
