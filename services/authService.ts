@@ -20,9 +20,15 @@ export const authService = {
   // Sign in with Google
   signInWithGoogle: async () => {
     const client = checkSupabase();
-    // Use current origin (works for both localhost and production)
-    // Remove hash/fragment to avoid issues
-    const redirectTo = window.location.origin + window.location.pathname;
+    // Detectar URL correta baseada no ambiente
+    // Em produção (Netlify), usar a URL atual
+    // Em desenvolvimento, usar localhost
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const redirectTo = isProduction 
+      ? window.location.origin + window.location.pathname
+      : 'http://localhost:3000';
+    
+    console.log('🔐 OAuth Redirect URL:', redirectTo, '| Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
     
     const { data, error } = await client.auth.signInWithOAuth({
       provider: 'google',
