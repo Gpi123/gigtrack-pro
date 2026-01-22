@@ -43,7 +43,7 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <button 
                 onClick={() => onToggleSelect(gig.id)}
-                className={`flex-shrink-0 transition-colors ${isSelected ? 'text-slate-300' : 'text-slate-600 hover:text-slate-400'}`}
+                className={`flex-shrink-0 transition-colors ${isSelected ? 'text-white' : 'text-white hover:text-white'}`}
               >
                 {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
               </button>
@@ -56,7 +56,7 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
               </div>
               
               <div className="flex-1 min-w-0">
-                <h3 className={`font-semibold text-lg truncate ${gig.status === GigStatus.PAID ? 'line-through text-slate-500' : 'text-slate-100'}`}>
+                <h3 className={`font-semibold text-lg truncate ${gig.status === GigStatus.PAID ? 'line-through text-white/50' : 'text-white'}`}>
                   {gig.title}
                 </h3>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-white">
@@ -74,7 +74,7 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
 
             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
               <div className="text-right">
-                <div className={`text-lg font-bold transition-all duration-300 ${displayValue ? 'text-slate-100' : 'text-slate-500 italic text-sm'}`}>
+                <div className={`text-lg font-bold transition-all duration-300 ${displayValue ? 'text-white' : 'text-white italic text-sm'}`}>
                   {displayValue || 'A definir'}
                 </div>
                 <div className={`text-[10px] font-bold uppercase tracking-widest ${gig.status === GigStatus.PAID ? 'text-emerald-500' : 'text-amber-500'}`}>
@@ -86,21 +86,21 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
                 <button 
                   onClick={() => onToggleStatus(gig.id)}
                   title={gig.status === GigStatus.PAID ? 'Marcar como pendente' : 'Marcar como pago'}
-                  className={`p-2 rounded-lg transition-colors ${gig.status === GigStatus.PAID ? 'text-emerald-400 bg-emerald-400/10' : 'text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10'}`}
+                  className={`p-2 rounded-lg transition-colors ${gig.status === GigStatus.PAID ? 'text-emerald-400 bg-emerald-400/10' : 'text-white hover:text-emerald-400 hover:bg-emerald-400/10'}`}
                 >
                   {gig.status === GigStatus.PAID ? <CheckCircle2 size={20} /> : <Circle size={20} />}
                 </button>
                 
                 <button 
                   onClick={() => onEdit(gig)}
-                  className="p-2 text-slate-500 hover:text-white hover:bg-[#24272D] rounded-lg transition-colors"
+                  className="p-2 text-white hover:text-white hover:bg-[#24272D] rounded-lg transition-colors"
                 >
                   <Edit2 size={20} />
                 </button>
                 
                 <button 
                   onClick={() => onDelete(gig.id)}
-                  className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                  className="p-2 text-white hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                 >
                   <Trash2 size={20} />
                 </button>

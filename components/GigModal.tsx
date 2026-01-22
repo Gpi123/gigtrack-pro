@@ -62,14 +62,14 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
       <div className="bg-[#24272D] border border-[#31333B] w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
         <div className="px-6 py-4 border-b border-[#31333B] flex justify-between items-center bg-[#24272D]">
           <h2 className="text-xl font-bold text-white">{initialData ? 'Editar Compromisso' : 'Novo Show / Evento'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-[#1E1F25] rounded-full text-white transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+            <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
               <Music size={12} /> Título do Evento
             </label>
             <input 
@@ -84,7 +84,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+              <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <Calendar size={12} /> Data
               </label>
               <input 
@@ -96,7 +96,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+              <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <DollarSign size={12} /> Valor (R$)
               </label>
               <input 
@@ -112,7 +112,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+              <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <Music size={12} /> Banda / Projeto
               </label>
               <input 
@@ -124,7 +124,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+              <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <MapPin size={12} /> Local
               </label>
               <input 
@@ -138,7 +138,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+            <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
               <FileText size={12} /> Notas Adicionais
             </label>
             <textarea 
@@ -151,21 +151,21 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           </div>
 
           <div className="space-y-1 pb-4">
-            <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+            <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
               Status Inicial do Pagamento
             </label>
             <div className="grid grid-cols-2 gap-2 p-1 bg-[#1E1F25] border border-[#31333B] rounded-xl">
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, status: GigStatus.PENDING }))}
-                className={`py-2 rounded-lg text-sm font-semibold transition-all ${formData.status === GigStatus.PENDING ? 'bg-amber-500/20 text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`py-2 rounded-lg text-sm font-semibold transition-all ${formData.status === GigStatus.PENDING ? 'bg-amber-500/20 text-amber-500 shadow-sm' : 'text-white hover:text-white'}`}
               >
                 Pendente
               </button>
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, status: GigStatus.PAID }))}
-                className={`py-2 rounded-lg text-sm font-semibold transition-all ${formData.status === GigStatus.PAID ? 'bg-emerald-500/20 text-emerald-500 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`py-2 rounded-lg text-sm font-semibold transition-all ${formData.status === GigStatus.PAID ? 'bg-emerald-500/20 text-emerald-500 shadow-sm' : 'text-white hover:text-white'}`}
               >
                 Pago
               </button>
@@ -177,7 +177,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           <button 
             type="button" 
             onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl border border-[#31333B] text-slate-300 font-semibold hover:bg-[#1E1F25] transition-colors"
+            className="flex-1 px-4 py-3 rounded-xl border border-[#31333B] text-white font-semibold hover:bg-[#1E1F25] transition-colors"
           >
             Cancelar
           </button>

@@ -294,14 +294,14 @@ const App: React.FC = () => {
   // Se não estiver autenticado, mostrar apenas tela de login
   if (!user && !loading) {
     return (
-      <div className="min-h-screen bg-[#1E1F25] text-slate-200 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#1E1F25] text-white flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="bg-[#3057F2] p-4 rounded-2xl inline-block mb-4">
               <Calendar className="w-12 h-12 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">GigTrack <span className="text-[#3057F2]">Pro</span></h1>
-            <p className="text-slate-400">Sua agenda de shows profissional</p>
+            <p className="text-white">Sua agenda de shows profissional</p>
           </div>
           <AuthModal 
             isOpen={true} 
@@ -335,20 +335,20 @@ const App: React.FC = () => {
       <header className="bg-[#24272D]/80 backdrop-blur-md border-b border-[#31333B] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsMenuOpen(true)} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors">
+            <button onClick={() => setIsMenuOpen(true)} className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors">
               <Menu size={24} />
             </button>
             <div className="flex items-center gap-2">
               <div className="bg-slate-700 p-2 rounded-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-white hidden sm:block">GigTrack <span className="text-slate-400">Pro</span></h1>
+              <h1 className="text-xl font-bold tracking-tight text-white hidden sm:block">GigTrack <span className="text-[#3057F2]">Pro</span></h1>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            {isSyncing && <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 animate-pulse bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700"><Cloud size={12}/> SYNC...</div>}
-            {isImporting && <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 animate-pulse bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700"><Upload size={12}/> IMPORTANDO...</div>}
+            {isSyncing && <div className="flex items-center gap-2 text-[10px] font-bold text-white animate-pulse bg-[#24272D] px-3 py-1.5 rounded-full border border-[#31333B]"><Cloud size={12}/> SYNC...</div>}
+            {isImporting && <div className="flex items-center gap-2 text-[10px] font-bold text-white animate-pulse bg-[#24272D] px-3 py-1.5 rounded-full border border-[#31333B]"><Upload size={12}/> IMPORTANDO...</div>}
             <input
               ref={importInputRef}
               type="file"
@@ -365,17 +365,17 @@ const App: React.FC = () => {
                 }
               }}
               disabled={isImporting}
-              className="p-2 hover:bg-[#24272D] rounded-lg text-slate-400 transition-colors disabled:opacity-50"
+              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors disabled:opacity-50"
               title="Importar Excel/CSV"
             >
               <Upload size={20} />
             </button>
             <button 
               onClick={() => setIsAuthModalOpen(true)} 
-              className="p-2 hover:bg-[#24272D] rounded-lg text-slate-400 transition-colors"
+              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors"
               title="Minha Conta"
             >
-              <User size={20} className="text-slate-300" />
+              <User size={20} className="text-white" />
             </button>
             <button 
               onClick={() => { 
@@ -399,8 +399,8 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 py-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40">
-            <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-4" />
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Carregando...</p>
+            <Loader2 className="w-10 h-10 text-[#3057F2] animate-spin mb-4" />
+            <p className="text-white font-bold uppercase tracking-widest text-[10px]">Carregando...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

@@ -39,7 +39,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
       icon: <Wallet className="w-5 h-5 text-white" />,
       bgColor: 'bg-[#24272D]',
       borderColor: 'border-[#31333B]',
-      textColor: 'text-slate-300',
+      textColor: 'text-white',
       iconBg: 'bg-[#1E1F25]'
     }
   ];

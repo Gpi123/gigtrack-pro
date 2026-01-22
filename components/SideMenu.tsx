@@ -56,8 +56,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
                 {isAnalyzing ? 'Analisando...' : 'Insights Financeiros'}
               </button>
               {insights && (
-                <div className="mt-5 bg-[#1E1F25] rounded-2xl p-5 border border-[#31333B] text-[11px] leading-relaxed text-slate-300 whitespace-pre-line animate-in fade-in duration-700">
-                  <div className="flex items-center gap-2 mb-3 text-slate-300 font-black uppercase tracking-widest text-[8px]">
+                <div className="mt-5 bg-[#1E1F25] rounded-2xl p-5 border border-[#31333B] text-[11px] leading-relaxed text-white whitespace-pre-line animate-in fade-in duration-700">
+                  <div className="flex items-center gap-2 mb-3 text-white font-black uppercase tracking-widest text-[8px]">
                     <Info size={10} /> Relatório Inteligente
                   </div>
                   {insights}
@@ -68,7 +68,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
         </div>
 
         <div className="p-8 border-t border-[#31333B] text-center bg-[#1E1F25]">
-          <p className="text-[10px] font-black text-slate-700 uppercase tracking-[0.4em]">GIGTRACK PRO v3.0</p>
+          <p className="text-[10px] font-black text-white uppercase tracking-[0.4em]">GIGTRACK PRO v3.0</p>
         </div>
       </div>
     </div>

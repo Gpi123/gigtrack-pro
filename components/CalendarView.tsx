@@ -131,8 +131,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
               selectedDayGigs.map(gig => (
                 <div key={gig.id} className="bg-[#1E1F25] border border-[#31333B] rounded-2xl p-3 flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-2">
-                    <h4 className="font-bold text-sm text-slate-100 leading-tight">{gig.title}</h4>
-                    <span className="text-xs font-black text-slate-300 whitespace-nowrap">{formatCurrency(gig.value)}</span>
+                    <h4 className="font-bold text-sm text-white leading-tight">{gig.title}</h4>
+                    <span className="text-xs font-black text-white whitespace-nowrap">{formatCurrency(gig.value)}</span>
                   </div>
                   <div className="flex items-center gap-3 text-[10px] text-white">
                     <span className="flex items-center gap-1 font-semibold uppercase tracking-wider">

@@ -64,7 +64,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
             </h2>
             <button 
               onClick={onClose} 
-              className="p-2 hover:bg-[#1E1F25] rounded-full text-slate-400 transition-colors"
+              className="p-2 hover:bg-[#1E1F25] rounded-full text-white transition-colors"
               disabled={isLoading}
             >
               <X size={20} />
@@ -93,7 +93,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
                   <p className="text-white font-semibold">
                     {profile?.full_name || user.email}
                   </p>
-                  <p className="text-slate-400 text-sm">{user.email}</p>
+                  <p className="text-white text-sm">{user.email}</p>
                 </div>
               </div>
 
@@ -117,7 +117,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-slate-400 text-center">
+              <p className="text-white text-center">
                 Faça login com sua conta Google para sincronizar seus shows na nuvem
               </p>
 

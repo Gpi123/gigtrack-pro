@@ -55,19 +55,19 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => onQuickFilter('week')}
-            className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-slate-300 text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
+            className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
           >
             Última Semana
           </button>
           <button
             onClick={() => onQuickFilter('month')}
-            className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-slate-300 text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
+            className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
           >
             Último Mês
           </button>
           <button
             onClick={() => onQuickFilter('year')}
-            className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-slate-300 text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
+            className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
           >
             Último Ano
           </button>
@@ -83,7 +83,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
                 onChange={(e) => onStartChange(e.target.value)}
                 className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#3057F2] transition-colors appearance-none"
               />
-              <CalendarIcon size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+              <CalendarIcon size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none" />
             </div>
           </div>
           
@@ -96,7 +96,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
                 onChange={(e) => onEndChange(e.target.value)}
                 className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#3057F2] transition-colors appearance-none"
               />
-              <CalendarIcon size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
+              <CalendarIcon size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none" />
             </div>
           </div>
         </div>
