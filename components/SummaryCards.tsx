@@ -45,20 +45,21 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-3">
+    <div className="grid grid-cols-3 gap-1 lg:grid-cols-1 lg:gap-3">
       {cardData.map((card, index) => (
         <div 
           key={index}
-          className={`${card.bgColor} border ${card.borderColor} rounded-2xl p-4 flex items-center gap-4 transition-all hover:scale-[1.02]`}
+          className={`${card.bgColor} border ${card.borderColor} rounded-lg lg:rounded-2xl p-1.5 lg:p-4 flex flex-col items-center justify-center lg:flex-row lg:items-center transition-all hover:scale-[1.02] min-h-[65px] lg:min-h-0`}
         >
-          <div className={`flex-shrink-0 p-3 ${card.iconBg} rounded-xl shadow-inner`}>
+          {/* Ícones apenas no desktop */}
+          <div className={`hidden lg:flex flex-shrink-0 p-3 ${card.iconBg} rounded-xl shadow-inner`}>
             {card.icon}
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-white text-[10px] font-bold uppercase tracking-widest truncate">
+          <div className="flex flex-col items-center lg:items-start min-w-0 flex-1 text-center lg:text-left w-full gap-0.5 lg:gap-0">
+            <span className="text-white text-[7px] lg:text-[10px] font-bold uppercase tracking-wide lg:tracking-widest leading-tight">
               {card.label}
             </span>
-            <div className={`text-xl font-bold ${card.textColor} tracking-tight truncate transition-all duration-300`}>
+            <div className={`text-[11px] lg:text-xl font-bold ${card.textColor} tracking-tight transition-all duration-300 leading-tight`}>
               {formatCurrency(card.value)}
             </div>
           </div>
