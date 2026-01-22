@@ -149,7 +149,7 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
       </div>
 
       {/* Quick Filters */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-3 gap-2 mb-2">
         <button
           onClick={() => onQuickFilter('week')}
           className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
@@ -168,9 +168,13 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
         >
           Ano Atual
         </button>
+      </div>
+      
+      {/* Botão Personalizado */}
+      <div className="mb-6">
         <button
           onClick={() => setIsPeriodModalOpen(true)}
-          className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B] col-span-2 lg:col-span-1"
+          className="w-full px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
         >
           Personalizado
         </button>
