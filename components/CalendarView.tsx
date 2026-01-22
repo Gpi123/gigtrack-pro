@@ -67,7 +67,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
         }}
         className={`relative h-10 w-10 sm:h-12 sm:w-12 flex flex-col items-center justify-center rounded-xl transition-all hover:bg-[#1E1F25] ${
           isSelected ? 'bg-[#1E1F25] text-white ring-2 ring-[#3057F2] ring-offset-2 ring-offset-[#24272D] shadow-lg' : 
-          isToday ? 'bg-[#1E1F25] text-slate-300 font-bold border border-[#31333B]' : 'text-slate-300'
+          isToday ? 'bg-[#1E1F25] text-white font-bold border border-[#31333B]' : 'text-white'
         }`}
       >
         <span className="text-sm">{d}</span>
@@ -91,12 +91,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
   return (
     <div className="bg-[#24272D] border border-[#31333B] rounded-3xl p-5 shadow-xl">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-slate-200 font-bold capitalize text-lg">{monthName} {year}</h3>
+        <h3 className="text-white font-bold capitalize text-lg">{monthName} {year}</h3>
         <div className="flex gap-1.5">
-          <button onClick={prevMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-slate-400 transition-colors bg-[#1E1F25]">
+          <button onClick={prevMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-white transition-colors bg-[#1E1F25]">
             <ChevronLeft size={20} />
           </button>
-          <button onClick={nextMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-slate-400 transition-colors bg-[#1E1F25]">
+          <button onClick={nextMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-white transition-colors bg-[#1E1F25]">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -104,7 +104,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
       
       <div className="grid grid-cols-7 gap-1 mb-2">
         {weekDays.map(wd => (
-          <div key={wd} className="text-[10px] font-bold text-slate-500 text-center uppercase py-1">
+          <div key={wd} className="text-[10px] font-bold text-white text-center uppercase py-1">
             {wd}
           </div>
         ))}
@@ -117,7 +117,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
       {selectedDate && (
         <div className="mt-6 pt-6 border-t border-[#31333B] animate-in slide-in-from-top-2">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-xs text-slate-400 font-medium">Shows em <span className="text-slate-300 font-bold">{new Date(selectedDate).toLocaleDateString('pt-BR')}</span></span>
+            <span className="text-xs text-white font-medium">Shows em <span className="text-white font-bold">{new Date(selectedDate).toLocaleDateString('pt-BR')}</span></span>
             <button 
               onClick={() => onDateSelect(null)}
               className="text-[10px] uppercase font-bold text-rose-400 hover:text-rose-300 transition-colors"
@@ -134,9 +134,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
                     <h4 className="font-bold text-sm text-slate-100 leading-tight">{gig.title}</h4>
                     <span className="text-xs font-black text-slate-300 whitespace-nowrap">{formatCurrency(gig.value)}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-3 text-[10px] text-white">
                     <span className="flex items-center gap-1 font-semibold uppercase tracking-wider">
-                      <Music size={10} className="text-slate-400" />
+                      <Music size={10} className="text-white" />
                       {gig.band_name || 'Freelance'}
                     </span>
                     {gig.location && (
@@ -149,7 +149,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
                 </div>
               ))
             ) : (
-              <p className="text-[11px] text-slate-500 italic text-center py-2">Nenhum evento registrado nesta data.</p>
+              <p className="text-[11px] text-white italic text-center py-2">Nenhum evento registrado nesta data.</p>
             )}
           </div>
         </div>

@@ -48,7 +48,7 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
                 {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
               </button>
 
-              <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 ${gig.status === GigStatus.PAID ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#1E1F25] text-slate-400'}`}>
+              <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 ${gig.status === GigStatus.PAID ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#1E1F25] text-white'}`}>
                 <span className="text-[10px] uppercase font-bold">
                   {dateObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
                 </span>
@@ -59,13 +59,13 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
                 <h3 className={`font-semibold text-lg truncate ${gig.status === GigStatus.PAID ? 'line-through text-slate-500' : 'text-slate-100'}`}>
                   {gig.title}
                 </h3>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-slate-400">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-white">
                   <span className="flex items-center gap-1">
-                    <Music size={14} className="text-slate-400" />
+                    <Music size={14} className="text-white" />
                     {gig.band_name || 'Freelance'}
                   </span>
                   <span className="flex items-center gap-1">
-                    <MapPin size={14} className="text-slate-500" />
+                    <MapPin size={14} className="text-white" />
                     {gig.location || 'N/A'}
                   </span>
                 </div>

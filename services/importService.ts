@@ -6,6 +6,7 @@ export interface ImportRow {
   data: string;
   banda: string;
   evento: string;
+  valor?: string;
 }
 
 export const importService = {
@@ -81,15 +82,37 @@ export const importService = {
             const eventoCol = Object.keys(rowRaw).find(k => 
               normalizeColumn(k).includes('evento') || normalizeColumn(k).includes('event')
             );
+            const valorCol = Object.keys(rowRaw).find(k => 
+              normalizeColumn(k).includes('valor') || normalizeColumn(k).includes('value') || 
+              normalizeColumn(k).includes('preco') || normalizeColumn(k).includes('price') ||
+              normalizeColumn(k).includes('cache') || normalizeColumn(k).includes('cachê')
+            );
             
             // Get raw and formatted values for date column
             const rawDateValue = dataCol ? rowRaw[dataCol] : null;
             const formattedDateValue = dataCol ? rowFormatted[dataCol] : null;
             
+            // Parse value - try to extract number from string or use raw number
+            let valorStr = '';
+            if (valorCol) {
+              const rawValor = rowRaw[valorCol];
+              const formattedValor = rowFormatted[valorCol];
+              
+              if (typeof rawValor === 'number') {
+                valorStr = rawValor.toString();
+              } else if (formattedValor) {
+                // Remove currency symbols and spaces, keep only numbers and decimal separator
+                valorStr = String(formattedValor).replace(/[^\d,.-]/g, '').replace(',', '.');
+              } else if (rawValor) {
+                valorStr = String(rawValor).replace(/[^\d,.-]/g, '').replace(',', '.');
+              }
+            }
+            
             return {
               data: dataCol ? convertExcelDate(rawDateValue, formattedDateValue) : '',
               banda: bandaCol ? String(rowRaw[bandaCol] || '').trim() : '',
-              evento: eventoCol ? String(rowRaw[eventoCol] || '').trim() : ''
+              evento: eventoCol ? String(rowRaw[eventoCol] || '').trim() : '',
+              valor: valorStr
             };
           }).filter(row => row.data && row.evento); // Filter empty rows
           
@@ -146,12 +169,21 @@ export const importService = {
       // Ensure date is in YYYY-MM-DD format
       const finalDate = dateObj.toISOString().split('T')[0];
       
+      // Parse value
+      let value = 0;
+      if (row.valor && row.valor.trim()) {
+        const parsedValue = parseFloat(row.valor);
+        if (!isNaN(parsedValue) && parsedValue > 0) {
+          value = parsedValue;
+        }
+      }
+      
       return {
         user_id: userId,
         title: row.evento || 'Evento sem título',
         date: finalDate,
         location: '',
-        value: 0,
+        value: value,
         status: GigStatus.PENDING,
         band_name: row.banda || '',
         notes: ''

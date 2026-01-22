@@ -67,6 +67,19 @@ export const gigService = {
     if (error) throw error;
   },
 
+  // Delete all gigs for the current user
+  deleteAllGigs: async (): Promise<void> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { error } = await supabase
+      .from('gigs')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+  },
+
   // Toggle gig status
   toggleGigStatus: async (id: string, currentStatus: GigStatus): Promise<Gig> => {
     const newStatus = currentStatus === GigStatus.PAID ? GigStatus.PENDING : GigStatus.PAID;

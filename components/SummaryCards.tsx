@@ -36,7 +36,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
     {
       label: 'Total Acumulado',
       value: stats.overallTotal,
-      icon: <Wallet className="w-5 h-5 text-slate-400" />,
+      icon: <Wallet className="w-5 h-5 text-white" />,
       bgColor: 'bg-[#24272D]',
       borderColor: 'border-[#31333B]',
       textColor: 'text-slate-300',
@@ -55,7 +55,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
             {card.icon}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest truncate">
+            <span className="text-white text-[10px] font-bold uppercase tracking-widest truncate">
               {card.label}
             </span>
             <div className={`text-xl font-bold ${card.textColor} tracking-tight truncate transition-all duration-300`}>

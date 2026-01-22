@@ -36,8 +36,8 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
   return (
     <div className={`bg-[#24272D] border transition-all duration-300 rounded-2xl p-5 shadow-xl ${isActive ? 'border-[#3057F2] ring-1 ring-[#3057F2]/20' : 'border-[#31333B]'}`}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-          <Search size={14} className="text-slate-400" />
+        <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+          <Search size={14} className="text-white" />
           Filtrar Período
         </h3>
         {isActive && (
@@ -75,7 +75,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">Início</span>
+            <span className="text-[10px] font-bold text-white uppercase ml-1">Início</span>
             <div className="relative">
               <input 
                 type="date" 
@@ -88,7 +88,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
           </div>
           
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">Fim</span>
+            <span className="text-[10px] font-bold text-white uppercase ml-1">Fim</span>
             <div className="relative">
               <input 
                 type="date" 
@@ -105,16 +105,16 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
           <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="bg-[#1E1F25] border border-[#31333B] rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between border-b border-[#31333B] pb-2">
-                <span className="text-[10px] font-bold text-slate-300 uppercase">Resultado do Período</span>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-700 rounded-full">
-                  <Music size={10} className="text-slate-400" />
-                  <span className="text-[10px] font-black text-slate-300">{gigCount} SHOWS</span>
+                <span className="text-[10px] font-bold text-white uppercase">Resultado do Período</span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#24272D] rounded-full">
+                  <Music size={10} className="text-white" />
+                  <span className="text-[10px] font-black text-white">{gigCount} SHOWS</span>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-end">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Total Bruto</span>
+                  <span className="text-[10px] font-bold text-white uppercase">Total Bruto</span>
                   <span className="text-lg font-bold text-white tracking-tight transition-all duration-300">
                     {formatCurrency(stats.overallTotal)}
                   </span>
@@ -124,7 +124,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
                   <div className="bg-[#24272D] rounded-lg p-2 border border-[#31333B]">
                     <div className="flex items-center gap-1 mb-1">
                       <CheckCircle2 size={10} className="text-emerald-500" />
-                      <span className="text-[8px] font-bold text-slate-500 uppercase">Recebido</span>
+                      <span className="text-[8px] font-bold text-white uppercase">Recebido</span>
                     </div>
                     <div className="text-xs font-bold text-emerald-400 truncate transition-all duration-300">
                       {formatCurrency(stats.totalReceived)}
@@ -133,7 +133,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
                   <div className="bg-[#24272D] rounded-lg p-2 border border-[#31333B]">
                     <div className="flex items-center gap-1 mb-1">
                       <Clock size={10} className="text-amber-500" />
-                      <span className="text-[8px] font-bold text-slate-500 uppercase">Pendente</span>
+                      <span className="text-[8px] font-bold text-white uppercase">Pendente</span>
                     </div>
                     <div className="text-xs font-bold text-amber-400 truncate transition-all duration-300">
                       {formatCurrency(stats.totalPending)}
@@ -144,7 +144,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
             </div>
           </div>
         ) : (startDate || endDate) ? (
-          <p className="text-[10px] text-slate-500 text-center italic mt-2">
+          <p className="text-[10px] text-white text-center italic mt-2">
             Selecione ambas as datas para ver o resumo.
           </p>
         ) : null}

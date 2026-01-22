@@ -36,9 +36,9 @@ const SideMenu: React.FC<SideMenuProps> = ({
           <div className="flex justify-between items-start mb-2">
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight">Painel Pro</h2>
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Menu de Ferramentas</p>
+              <p className="text-[10px] text-white uppercase tracking-widest font-bold">Menu de Ferramentas</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-[#1E1F25] rounded-full text-slate-400 transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-[#1E1F25] rounded-full text-white transition-colors">
               <X size={24} />
             </button>
           </div>
@@ -47,8 +47,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-10">
           {/* AI Section */}
           <section className="space-y-4">
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-              <BrainCircuit size={14} className="text-slate-400" /> GigTrack AI
+            <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] flex items-center gap-2">
+              <BrainCircuit size={14} className="text-white" /> GigTrack AI
             </h3>
             <div className="bg-[#1E1F25] border border-[#31333B] rounded-3xl p-6">
                <button onClick={onGenerateInsights} disabled={isAnalyzing} className="w-full bg-[#3057F2] hover:bg-[#2545D9] text-white border border-[#3057F2] py-4 rounded-2xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-3">

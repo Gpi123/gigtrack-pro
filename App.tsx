@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, LayoutDashboard, Calendar, DollarSign, BrainCircuit, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar, DollarSign, BrainCircuit, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload, Trash2 } from 'lucide-react';
 import { Gig, GigStatus, FinancialStats } from './types';
 import { getMusicianInsights } from './services/geminiService';
 import { gigService } from './services/gigService';
@@ -9,6 +9,7 @@ import { authService, UserProfile } from './services/authService';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import GigModal from './components/GigModal';
 import AuthModal from './components/AuthModal';
+import ConfirmModal from './components/ConfirmModal';
 import SummaryCards from './components/SummaryCards';
 import GigList from './components/GigList';
 import CalendarView from './components/CalendarView';
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [editingGig, setEditingGig] = useState<Gig | null>(null);
   const [preSelectedDate, setPreSelectedDate] = useState<string | null>(null);
   const [insights, setInsights] = useState<string>('');
@@ -153,6 +155,17 @@ const App: React.FC = () => {
       } finally {
         setIsSyncing(false);
       }
+    }
+  };
+
+  const handleClearAllGigs = async () => {
+    try {
+      await gigService.deleteAllGigs();
+      await loadGigs();
+      alert('✅ Agenda limpa com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao limpar agenda:', error);
+      alert(error.message || 'Erro ao limpar agenda');
     }
   };
 
@@ -303,7 +316,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20 md:pb-8 bg-slate-950 text-slate-200">
+    <div className="min-h-screen pb-20 md:pb-8 bg-[#1E1F25] text-white">
       <SideMenu 
         isOpen={isMenuOpen} 
         onClose={() => setIsMenuOpen(false)} 
@@ -442,8 +455,8 @@ const App: React.FC = () => {
               />
               <section className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Resumo Financeiro</h3>
-                  <button onClick={() => setShowValues(!showValues)} className={`p-1.5 rounded-lg border transition-all ${showValues ? 'bg-[#24272D] border-[#31333B] text-slate-400' : 'bg-[#3057F2]/10 border-[#3057F2]/20 text-[#3057F2]'}`}>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest">Resumo Financeiro</h3>
+                  <button onClick={() => setShowValues(!showValues)} className={`p-1.5 rounded-lg border transition-all ${showValues ? 'bg-[#24272D] border-[#31333B] text-white' : 'bg-[#3057F2]/10 border-[#3057F2]/20 text-[#3057F2]'}`}>
                     {showValues ? <Eye size={14} /> : <EyeOff size={14} />}
                   </button>
                 </div>
@@ -452,16 +465,27 @@ const App: React.FC = () => {
             </div>
 
             <div className="lg:col-span-8">
-              <h2 className="text-2xl font-bold flex items-center gap-3 text-white mb-8">
-                <LayoutDashboard size={24} className="text-slate-400" />
-                {isPeriodActive ? 'Filtro de Período' : (selectedCalendarDate ? 'Data Selecionada' : 'Minha Agenda')}
-              </h2>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-bold flex items-center gap-3 text-white">
+                  <LayoutDashboard size={24} className="text-white" />
+                  {isPeriodActive ? 'Filtro de Período' : (selectedCalendarDate ? 'Data Selecionada' : 'Minha Agenda')}
+                </h2>
+                {filteredGigs.length > 0 && !isPeriodActive && !selectedCalendarDate && (
+                  <button
+                    onClick={() => setIsClearConfirmOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all"
+                  >
+                    <Trash2 size={16} />
+                    Limpar Agenda
+                  </button>
+                )}
+              </div>
 
               {filteredGigs.length === 0 ? (
                 <div className="text-center py-32 bg-[#24272D]/20 border-2 border-dashed border-[#31333B]/50 rounded-3xl">
-                  <Calendar className="text-slate-600 w-12 h-12 mx-auto mb-4" />
-                  <h3 className="text-slate-300 text-lg font-medium">Nenhum evento registrado</h3>
-                  <button onClick={() => { setSelectedCalendarDate(null); setStartDate(''); setEndDate(''); }} className="text-indigo-400 text-sm font-bold mt-4 hover:underline">Ver tudo</button>
+                  <Calendar className="text-white w-12 h-12 mx-auto mb-4" />
+                  <h3 className="text-white text-lg font-medium">Nenhum evento registrado</h3>
+                  <button onClick={() => { setSelectedCalendarDate(null); setStartDate(''); setEndDate(''); }} className="text-[#3057F2] text-sm font-bold mt-4 hover:underline">Ver tudo</button>
                 </div>
               ) : (
                 <GigList 
@@ -509,6 +533,18 @@ const App: React.FC = () => {
           user={user}
           profile={userProfile}
           onAuthChange={setUser}
+        />
+      )}
+      {isClearConfirmOpen && (
+        <ConfirmModal
+          isOpen={isClearConfirmOpen}
+          onClose={() => setIsClearConfirmOpen(false)}
+          onConfirm={handleClearAllGigs}
+          title="Limpar Agenda"
+          message="Tem certeza que deseja excluir TODOS os eventos da sua agenda? Esta ação não pode ser desfeita."
+          confirmText="Sim, Limpar Tudo"
+          cancelText="Cancelar"
+          isDestructive={true}
         />
       )}
     </div>
