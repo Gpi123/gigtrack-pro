@@ -574,11 +574,11 @@ const App: React.FC = () => {
 
       {/* Footer fixo com Resumo Financeiro (mobile) */}
       <footer className="fixed bottom-0 left-0 right-0 bg-[#24272D] border-t border-[#31333B] z-30 lg:hidden shadow-2xl">
-        <div className="px-2 py-2.5">
-          <div className="flex items-center justify-between mb-1.5 px-1">
-            <h3 className="text-[9px] font-bold text-white uppercase tracking-wider">Resumo Financeiro</h3>
-            <button onClick={() => setShowValues(!showValues)} className={`p-1 rounded-lg border transition-all ${showValues ? 'bg-[#24272D] border-[#31333B] text-white' : 'bg-[#3057F2]/10 border-[#3057F2]/20 text-[#3057F2]'}`}>
-              {showValues ? <Eye size={11} /> : <EyeOff size={11} />}
+        <div className="px-3 py-3">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Resumo Financeiro</h3>
+            <button onClick={() => setShowValues(!showValues)} className={`p-2 rounded-lg border transition-all ${showValues ? 'bg-[#24272D] border-[#31333B] text-white' : 'bg-[#3057F2]/10 border-[#3057F2]/20 text-[#3057F2]'}`}>
+              {showValues ? <Eye size={16} /> : <EyeOff size={16} />}
             </button>
           </div>
           <SummaryCards stats={stats} showValues={showValues} />
