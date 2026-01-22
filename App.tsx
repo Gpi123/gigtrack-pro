@@ -360,7 +360,7 @@ const App: React.FC = () => {
               <Menu size={24} />
             </button>
             <div className="flex items-center gap-2">
-              <div className="bg-slate-700 p-2 rounded-lg">
+              <div className="bg-[#3057F2] p-2 rounded-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-xl font-bold tracking-tight text-white hidden sm:block">GigTrack <span className="text-[#3057F2]">Pro</span></h1>
@@ -470,6 +470,11 @@ const App: React.FC = () => {
                   
                   setStartDate(start.toISOString().split('T')[0]);
                   setEndDate(end.toISOString().split('T')[0]);
+                  setSelectedCalendarDate(null);
+                }}
+                onCustomPeriod={(start, end) => {
+                  setStartDate(start);
+                  setEndDate(end);
                   setSelectedCalendarDate(null);
                 }}
                 onClear={() => { setStartDate(''); setEndDate(''); setSelectedCalendarDate(null); }}

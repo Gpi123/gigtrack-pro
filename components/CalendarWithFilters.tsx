@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Music, CheckCircle2, Clock } from 'lucide-react';
 import { Gig, GigStatus, FinancialStats } from '../types';
+import PeriodModal from './PeriodModal';
 
 interface CalendarWithFiltersProps {
   gigs: Gig[];
@@ -10,6 +11,7 @@ interface CalendarWithFiltersProps {
   onDateSelect: (date: string | null) => void;
   onDateClick: (date: string) => void;
   onQuickFilter: (type: 'week' | 'month' | 'year') => void;
+  onCustomPeriod: (startDate: string, endDate: string) => void;
   onClear: () => void;
   showValues: boolean;
   stats: FinancialStats;
@@ -24,11 +26,13 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
   onDateSelect,
   onDateClick,
   onQuickFilter,
+  onCustomPeriod,
   onClear,
   showValues,
   stats,
   gigCount
 }) => {
+  const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -85,7 +89,7 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
         }`}
       >
         <span className="text-sm">{d}</span>
-        {dayGigs.length > 0 && !isSelected && (
+        {dayGigs.length > 0 && (
           <div className="absolute bottom-1.5 flex gap-0.5">
             {dayGigs.slice(0, 3).map((g, idx) => (
               <div 
@@ -145,7 +149,7 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
       </div>
 
       {/* Quick Filters */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-6">
         <button
           onClick={() => onQuickFilter('week')}
           className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
@@ -163,6 +167,12 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
           className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
         >
           Ano Atual
+        </button>
+        <button
+          onClick={() => setIsPeriodModalOpen(true)}
+          className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B] col-span-2 lg:col-span-1"
+        >
+          Personalizado
         </button>
       </div>
 
@@ -225,6 +235,18 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal de Período Personalizado */}
+      <PeriodModal
+        isOpen={isPeriodModalOpen}
+        onClose={() => setIsPeriodModalOpen(false)}
+        onConfirm={(start, end) => {
+          onCustomPeriod(start, end);
+          setIsPeriodModalOpen(false);
+        }}
+        currentStartDate={startDate}
+        currentEndDate={endDate}
+      />
     </div>
   );
 };
