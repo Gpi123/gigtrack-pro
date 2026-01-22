@@ -31,14 +31,14 @@ const SideMenu: React.FC<SideMenuProps> = ({
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-[340px] bg-slate-900 border-r border-slate-800 h-full flex flex-col animate-in slide-in-from-left duration-300 shadow-2xl">
-        <div className="p-6 border-b border-slate-800 bg-slate-950/40">
+      <div className="relative w-full max-w-[340px] bg-[#24272D] border-r border-[#31333B] h-full flex flex-col animate-in slide-in-from-left duration-300 shadow-2xl">
+        <div className="p-6 border-b border-[#31333B] bg-[#1E1F25]">
           <div className="flex justify-between items-start mb-2">
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight">Painel Pro</h2>
               <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Menu de Ferramentas</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-[#1E1F25] rounded-full text-slate-400 transition-colors">
               <X size={24} />
             </button>
           </div>
@@ -50,13 +50,13 @@ const SideMenu: React.FC<SideMenuProps> = ({
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
               <BrainCircuit size={14} className="text-slate-400" /> GigTrack AI
             </h3>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-6">
-               <button onClick={onGenerateInsights} disabled={isAnalyzing} className="w-full bg-slate-700/50 hover:bg-slate-700 text-slate-200 border border-slate-600 py-4 rounded-2xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-3">
+            <div className="bg-[#1E1F25] border border-[#31333B] rounded-3xl p-6">
+               <button onClick={onGenerateInsights} disabled={isAnalyzing} className="w-full bg-[#3057F2] hover:bg-[#2545D9] text-white border border-[#3057F2] py-4 rounded-2xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-3">
                 {isAnalyzing ? <Loader2 size={18} className="animate-spin" /> : <BrainCircuit size={18} />}
                 {isAnalyzing ? 'Analisando...' : 'Insights Financeiros'}
               </button>
               {insights && (
-                <div className="mt-5 bg-slate-950/60 rounded-2xl p-5 border border-slate-700 text-[11px] leading-relaxed text-slate-300 whitespace-pre-line animate-in fade-in duration-700">
+                <div className="mt-5 bg-[#1E1F25] rounded-2xl p-5 border border-[#31333B] text-[11px] leading-relaxed text-slate-300 whitespace-pre-line animate-in fade-in duration-700">
                   <div className="flex items-center gap-2 mb-3 text-slate-300 font-black uppercase tracking-widest text-[8px]">
                     <Info size={10} /> Relatório Inteligente
                   </div>
@@ -67,7 +67,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
           </section>
         </div>
 
-        <div className="p-8 border-t border-slate-800 text-center bg-slate-950/30">
+        <div className="p-8 border-t border-[#31333B] text-center bg-[#1E1F25]">
           <p className="text-[10px] font-black text-slate-700 uppercase tracking-[0.4em]">GIGTRACK PRO v3.0</p>
         </div>
       </div>

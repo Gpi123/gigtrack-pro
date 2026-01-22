@@ -281,13 +281,13 @@ const App: React.FC = () => {
   // Se não estiver autenticado, mostrar apenas tela de login
   if (!user && !loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#1E1F25] text-slate-200 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="bg-slate-700 p-4 rounded-2xl inline-block mb-4">
+            <div className="bg-[#3057F2] p-4 rounded-2xl inline-block mb-4">
               <Calendar className="w-12 h-12 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">GigTrack <span className="text-slate-400">Pro</span></h1>
+            <h1 className="text-3xl font-bold text-white mb-2">GigTrack <span className="text-[#3057F2]">Pro</span></h1>
             <p className="text-slate-400">Sua agenda de shows profissional</p>
           </div>
           <AuthModal 
@@ -319,7 +319,7 @@ const App: React.FC = () => {
         insights={insights}
       />
 
-      <header className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
+      <header className="bg-[#24272D]/80 backdrop-blur-md border-b border-[#31333B] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsMenuOpen(true)} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors">
@@ -352,14 +352,14 @@ const App: React.FC = () => {
                 }
               }}
               disabled={isImporting}
-              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors disabled:opacity-50"
+              className="p-2 hover:bg-[#24272D] rounded-lg text-slate-400 transition-colors disabled:opacity-50"
               title="Importar Excel/CSV"
             >
               <Upload size={20} />
             </button>
             <button 
               onClick={() => setIsAuthModalOpen(true)} 
-              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors"
+              className="p-2 hover:bg-[#24272D] rounded-lg text-slate-400 transition-colors"
               title="Minha Conta"
             >
               <User size={20} className="text-slate-300" />
@@ -374,7 +374,7 @@ const App: React.FC = () => {
                   setIsModalOpen(true);
                 }
               }} 
-              className="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-slate-700/20"
+              className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/20"
             >
               <Plus size={18} />
               <span>Novo Show</span>
@@ -443,7 +443,7 @@ const App: React.FC = () => {
               <section className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Resumo Financeiro</h3>
-                  <button onClick={() => setShowValues(!showValues)} className={`p-1.5 rounded-lg border transition-all ${showValues ? 'bg-slate-800/50 border-slate-700 text-slate-400' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'}`}>
+                  <button onClick={() => setShowValues(!showValues)} className={`p-1.5 rounded-lg border transition-all ${showValues ? 'bg-[#24272D] border-[#31333B] text-slate-400' : 'bg-[#3057F2]/10 border-[#3057F2]/20 text-[#3057F2]'}`}>
                     {showValues ? <Eye size={14} /> : <EyeOff size={14} />}
                   </button>
                 </div>
@@ -458,7 +458,7 @@ const App: React.FC = () => {
               </h2>
 
               {filteredGigs.length === 0 ? (
-                <div className="text-center py-32 bg-slate-900/20 border-2 border-dashed border-slate-800/50 rounded-3xl">
+                <div className="text-center py-32 bg-[#24272D]/20 border-2 border-dashed border-[#31333B]/50 rounded-3xl">
                   <Calendar className="text-slate-600 w-12 h-12 mx-auto mb-4" />
                   <h3 className="text-slate-300 text-lg font-medium">Nenhum evento registrado</h3>
                   <button onClick={() => { setSelectedCalendarDate(null); setStartDate(''); setEndDate(''); }} className="text-indigo-400 text-sm font-bold mt-4 hover:underline">Ver tudo</button>

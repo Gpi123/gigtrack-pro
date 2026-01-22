@@ -55,16 +55,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
 
   return (
     <div className={`${isOpen ? 'fixed' : 'relative'} inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'bg-black/80 backdrop-blur-sm' : ''} animate-in fade-in duration-200`}>
-      <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="bg-[#24272D] border border-[#31333B] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
         {isOpen && (
-          <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+          <div className="px-6 py-4 border-b border-[#31333B] flex justify-between items-center bg-[#24272D]">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <UserIcon size={20} />
               {user ? 'Minha Conta' : 'Entrar'}
             </h2>
             <button 
               onClick={onClose} 
-              className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+              className="p-2 hover:bg-[#1E1F25] rounded-full text-slate-400 transition-colors"
               disabled={isLoading}
             >
               <X size={20} />
@@ -81,12 +81,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
 
           {user ? (
             <div className="space-y-4">
-              <div className="bg-slate-800/50 rounded-xl p-4 space-y-2">
+              <div className="bg-[#1E1F25] rounded-xl p-4 space-y-2">
                 {profile?.avatar_url && (
                   <img 
                     src={profile.avatar_url} 
                     alt="Avatar" 
-                    className="w-16 h-16 rounded-full mx-auto border-2 border-slate-600"
+                    className="w-16 h-16 rounded-full mx-auto border-2 border-[#31333B]"
                   />
                 )}
                 <div className="text-center">

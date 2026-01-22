@@ -59,8 +59,8 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-        <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+      <div className="bg-[#24272D] border border-[#31333B] w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+        <div className="px-6 py-4 border-b border-[#31333B] flex justify-between items-center bg-[#24272D]">
           <h2 className="text-xl font-bold text-white">{initialData ? 'Editar Compromisso' : 'Novo Show / Evento'}</h2>
           <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
             <X size={20} />
@@ -76,7 +76,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               required
               type="text" 
               placeholder="Ex: Show no SESC, Casamento João & Maria..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
+              className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
               value={formData.title}
               onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
             />
@@ -90,7 +90,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               <input 
                 required
                 type="date" 
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
                 value={formData.date}
                 onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
               />
@@ -103,7 +103,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
                 type="number" 
                 step="0.01"
                 placeholder="Opcional (A definir)"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
                 value={formData.value}
                 onChange={e => setFormData(prev => ({ ...prev, value: e.target.value }))}
               />
@@ -118,7 +118,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               <input 
                 type="text" 
                 placeholder="Nome da banda"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
                 value={formData.band_name}
                 onChange={e => setFormData(prev => ({ ...prev, band_name: e.target.value }))}
               />
@@ -130,7 +130,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               <input 
                 type="text" 
                 placeholder="Onde será?"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
                 value={formData.location}
                 onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
               />
@@ -154,7 +154,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
             <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
               Status Inicial do Pagamento
             </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+            <div className="grid grid-cols-2 gap-2 p-1 bg-[#1E1F25] border border-[#31333B] rounded-xl">
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, status: GigStatus.PENDING }))}
@@ -173,17 +173,17 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           </div>
         </form>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-900 flex gap-3">
+        <div className="p-6 border-t border-[#31333B] bg-[#24272D] flex gap-3">
           <button 
             type="button" 
             onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl border border-slate-800 text-slate-300 font-semibold hover:bg-slate-800 transition-colors"
+            className="flex-1 px-4 py-3 rounded-xl border border-[#31333B] text-slate-300 font-semibold hover:bg-[#1E1F25] transition-colors"
           >
             Cancelar
           </button>
           <button 
             onClick={handleSubmit}
-            className="flex-[2] px-4 py-3 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-600 shadow-lg shadow-slate-700/20 transition-all active:scale-95"
+            className="flex-[2] px-4 py-3 rounded-xl bg-[#3057F2] text-white font-bold hover:bg-[#2545D9] shadow-lg shadow-[#3057F2]/20 transition-all active:scale-95"
           >
             {initialData ? 'Salvar Alterações' : 'Confirmar Evento'}
           </button>

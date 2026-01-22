@@ -35,9 +35,9 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
         return (
           <div 
             key={gig.id} 
-            className={`group bg-slate-900/50 border transition-all hover:bg-slate-800/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-              isSelected ? 'border-slate-600 bg-slate-800/50' : 
-              gig.status === GigStatus.PAID ? 'border-emerald-500/20 opacity-90' : 'border-slate-800'
+            className={`group bg-[#24272D] border transition-all hover:bg-[#1E1F25] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+              isSelected ? 'border-[#3057F2] bg-[#1E1F25]' : 
+              gig.status === GigStatus.PAID ? 'border-emerald-500/20 opacity-90' : 'border-[#31333B]'
             }`}
           >
             <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -48,7 +48,7 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
                 {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
               </button>
 
-              <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 ${gig.status === GigStatus.PAID ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
+              <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 ${gig.status === GigStatus.PAID ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#1E1F25] text-slate-400'}`}>
                 <span className="text-[10px] uppercase font-bold">
                   {dateObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
                 </span>
@@ -93,7 +93,7 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
                 
                 <button 
                   onClick={() => onEdit(gig)}
-                  className="p-2 text-slate-500 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                  className="p-2 text-slate-500 hover:text-white hover:bg-[#24272D] rounded-lg transition-colors"
                 >
                   <Edit2 size={20} />
                 </button>

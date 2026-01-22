@@ -65,9 +65,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
             onDateSelect(isSelected ? null : dateStr);
           }
         }}
-        className={`relative h-10 w-10 sm:h-12 sm:w-12 flex flex-col items-center justify-center rounded-xl transition-all hover:bg-slate-800 ${
-          isSelected ? 'bg-slate-700 text-white ring-2 ring-slate-500 ring-offset-2 ring-offset-slate-900 shadow-lg' : 
-          isToday ? 'bg-slate-800 text-slate-300 font-bold border border-slate-600' : 'text-slate-300'
+        className={`relative h-10 w-10 sm:h-12 sm:w-12 flex flex-col items-center justify-center rounded-xl transition-all hover:bg-[#1E1F25] ${
+          isSelected ? 'bg-[#1E1F25] text-white ring-2 ring-[#3057F2] ring-offset-2 ring-offset-[#24272D] shadow-lg' : 
+          isToday ? 'bg-[#1E1F25] text-slate-300 font-bold border border-[#31333B]' : 'text-slate-300'
         }`}
       >
         <span className="text-sm">{d}</span>
@@ -89,14 +89,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
   const selectedDayGigs = selectedDate ? getGigsForDay(selectedDate) : [];
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl">
+    <div className="bg-[#24272D] border border-[#31333B] rounded-3xl p-5 shadow-xl">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-slate-200 font-bold capitalize text-lg">{monthName} {year}</h3>
         <div className="flex gap-1.5">
-          <button onClick={prevMonth} className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors bg-slate-950/50">
+          <button onClick={prevMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-slate-400 transition-colors bg-[#1E1F25]">
             <ChevronLeft size={20} />
           </button>
-          <button onClick={nextMonth} className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors bg-slate-950/50">
+          <button onClick={nextMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-slate-400 transition-colors bg-[#1E1F25]">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -115,7 +115,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
       </div>
 
       {selectedDate && (
-        <div className="mt-6 pt-6 border-t border-slate-800 animate-in slide-in-from-top-2">
+        <div className="mt-6 pt-6 border-t border-[#31333B] animate-in slide-in-from-top-2">
           <div className="flex justify-between items-center mb-4">
             <span className="text-xs text-slate-400 font-medium">Shows em <span className="text-slate-300 font-bold">{new Date(selectedDate).toLocaleDateString('pt-BR')}</span></span>
             <button 
@@ -129,7 +129,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
           <div className="space-y-2">
             {selectedDayGigs.length > 0 ? (
               selectedDayGigs.map(gig => (
-                <div key={gig.id} className="bg-slate-950/50 border border-slate-800 rounded-2xl p-3 flex flex-col gap-2">
+                <div key={gig.id} className="bg-[#1E1F25] border border-[#31333B] rounded-2xl p-3 flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-2">
                     <h4 className="font-bold text-sm text-slate-100 leading-tight">{gig.title}</h4>
                     <span className="text-xs font-black text-slate-300 whitespace-nowrap">{formatCurrency(gig.value)}</span>
