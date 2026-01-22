@@ -48,16 +48,16 @@ const SideMenu: React.FC<SideMenuProps> = ({
           {/* AI Section */}
           <section className="space-y-4">
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-              <BrainCircuit size={14} className="text-indigo-500" /> GigTrack AI
+              <BrainCircuit size={14} className="text-slate-400" /> GigTrack AI
             </h3>
-            <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-3xl p-6">
-               <button onClick={onGenerateInsights} disabled={isAnalyzing} className="w-full bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-200 border border-indigo-500/30 py-4 rounded-2xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-3">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-6">
+               <button onClick={onGenerateInsights} disabled={isAnalyzing} className="w-full bg-slate-700/50 hover:bg-slate-700 text-slate-200 border border-slate-600 py-4 rounded-2xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-3">
                 {isAnalyzing ? <Loader2 size={18} className="animate-spin" /> : <BrainCircuit size={18} />}
                 {isAnalyzing ? 'Analisando...' : 'Insights Financeiros'}
               </button>
               {insights && (
-                <div className="mt-5 bg-slate-950/60 rounded-2xl p-5 border border-indigo-500/10 text-[11px] leading-relaxed text-slate-300 whitespace-pre-line animate-in fade-in duration-700">
-                  <div className="flex items-center gap-2 mb-3 text-indigo-400 font-black uppercase tracking-widest text-[8px]">
+                <div className="mt-5 bg-slate-950/60 rounded-2xl p-5 border border-slate-700 text-[11px] leading-relaxed text-slate-300 whitespace-pre-line animate-in fade-in duration-700">
+                  <div className="flex items-center gap-2 mb-3 text-slate-300 font-black uppercase tracking-widest text-[8px]">
                     <Info size={10} /> Relatório Inteligente
                   </div>
                   {insights}

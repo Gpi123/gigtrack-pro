@@ -13,6 +13,7 @@ interface PeriodFilterProps {
   stats: FinancialStats;
   gigCount: number;
   showValues: boolean;
+  onQuickFilter: (type: 'week' | 'month' | 'year') => void;
 }
 
 const PeriodFilter: React.FC<PeriodFilterProps> = ({ 
@@ -24,7 +25,8 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
   isActive,
   stats,
   gigCount,
-  showValues
+  showValues,
+  onQuickFilter
 }) => {
   const formatCurrency = (val: number) => {
     if (!showValues) return 'R$ ••••';
@@ -32,10 +34,10 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
   };
 
   return (
-    <div className={`bg-slate-900 border transition-all duration-300 rounded-2xl p-5 shadow-xl ${isActive ? 'border-indigo-500/50 ring-1 ring-indigo-500/20' : 'border-slate-800'}`}>
+    <div className={`bg-slate-900 border transition-all duration-300 rounded-2xl p-5 shadow-xl ${isActive ? 'border-slate-600 ring-1 ring-slate-500/20' : 'border-slate-800'}`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-          <Search size={14} className="text-indigo-500" />
+          <Search size={14} className="text-slate-400" />
           Filtrar Período
         </h3>
         {isActive && (
@@ -49,6 +51,28 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
       </div>
 
       <div className="space-y-4">
+        {/* Quick Filters */}
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => onQuickFilter('week')}
+            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all border border-slate-700"
+          >
+            Última Semana
+          </button>
+          <button
+            onClick={() => onQuickFilter('month')}
+            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all border border-slate-700"
+          >
+            Último Mês
+          </button>
+          <button
+            onClick={() => onQuickFilter('year')}
+            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all border border-slate-700"
+          >
+            Último Ano
+          </button>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-slate-500 uppercase ml-1">Início</span>
@@ -57,7 +81,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
                 type="date" 
                 value={startDate}
                 onChange={(e) => onStartChange(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600 transition-colors appearance-none"
               />
               <CalendarIcon size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
             </div>
@@ -70,7 +94,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
                 type="date" 
                 value={endDate}
                 onChange={(e) => onEndChange(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors appearance-none"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600 transition-colors appearance-none"
               />
               <CalendarIcon size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
             </div>
@@ -79,12 +103,12 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
         
         {isActive ? (
           <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-indigo-500/10 pb-2">
-                <span className="text-[10px] font-bold text-indigo-400 uppercase">Resultado do Período</span>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/20 rounded-full">
-                  <Music size={10} className="text-indigo-400" />
-                  <span className="text-[10px] font-black text-indigo-300">{gigCount} SHOWS</span>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+                <span className="text-[10px] font-bold text-slate-300 uppercase">Resultado do Período</span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-700 rounded-full">
+                  <Music size={10} className="text-slate-400" />
+                  <span className="text-[10px] font-black text-slate-300">{gigCount} SHOWS</span>
                 </div>
               </div>
 

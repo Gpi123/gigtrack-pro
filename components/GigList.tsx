@@ -36,14 +36,14 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
           <div 
             key={gig.id} 
             className={`group bg-slate-900/50 border transition-all hover:bg-slate-800/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-              isSelected ? 'border-indigo-500/50 bg-indigo-500/5' : 
+              isSelected ? 'border-slate-600 bg-slate-800/50' : 
               gig.status === GigStatus.PAID ? 'border-emerald-500/20 opacity-90' : 'border-slate-800'
             }`}
           >
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <button 
                 onClick={() => onToggleSelect(gig.id)}
-                className={`flex-shrink-0 transition-colors ${isSelected ? 'text-indigo-500' : 'text-slate-600 hover:text-slate-400'}`}
+                className={`flex-shrink-0 transition-colors ${isSelected ? 'text-slate-300' : 'text-slate-600 hover:text-slate-400'}`}
               >
                 {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
               </button>
@@ -61,7 +61,7 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
                 </h3>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-slate-400">
                   <span className="flex items-center gap-1">
-                    <Music size={14} className="text-indigo-400" />
+                    <Music size={14} className="text-slate-400" />
                     {gig.band_name || 'Freelance'}
                   </span>
                   <span className="flex items-center gap-1">

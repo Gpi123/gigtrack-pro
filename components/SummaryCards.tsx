@@ -36,11 +36,11 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
     {
       label: 'Total Acumulado',
       value: stats.overallTotal,
-      icon: <Wallet className="w-5 h-5 text-indigo-400" />,
-      bgColor: 'bg-indigo-500/10',
-      borderColor: 'border-indigo-500/20',
-      textColor: 'text-indigo-400',
-      iconBg: 'bg-indigo-500/20'
+      icon: <Wallet className="w-5 h-5 text-slate-400" />,
+      bgColor: 'bg-slate-800/50',
+      borderColor: 'border-slate-700',
+      textColor: 'text-slate-300',
+      iconBg: 'bg-slate-700/50'
     }
   ];
 

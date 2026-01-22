@@ -7,7 +7,7 @@ interface GigModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (gig: any) => void;
-  initialData?: Gig | null;
+  initialData?: Partial<Gig> | null;
 }
 
 const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
@@ -22,18 +22,30 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
   });
 
   useEffect(() => {
-    if (initialData) {
+    if (!isOpen) {
+      // Reset form when modal closes
       setFormData({
-        title: initialData.title,
-        date: initialData.date,
+        title: '',
+        date: new Date().toISOString().split('T')[0],
+        value: '',
+        location: '',
+        band_name: '',
+        notes: '',
+        status: GigStatus.PENDING
+      });
+    } else if (initialData) {
+      // Set form data when modal opens with initial data
+      setFormData({
+        title: initialData.title || '',
+        date: initialData.date || new Date().toISOString().split('T')[0],
         value: initialData.value !== undefined && initialData.value !== 0 ? initialData.value.toString() : '',
         location: initialData.location || '',
         band_name: initialData.band_name || '',
         notes: initialData.notes || '',
-        status: initialData.status
+        status: initialData.status || GigStatus.PENDING
       });
     }
-  }, [initialData]);
+  }, [initialData, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +76,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               required
               type="text" 
               placeholder="Ex: Show no SESC, Casamento João & Maria..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
               value={formData.title}
               onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
             />
@@ -78,7 +90,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               <input 
                 required
                 type="date" 
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
                 value={formData.date}
                 onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
               />
@@ -91,7 +103,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
                 type="number" 
                 step="0.01"
                 placeholder="Opcional (A definir)"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
                 value={formData.value}
                 onChange={e => setFormData(prev => ({ ...prev, value: e.target.value }))}
               />
@@ -106,7 +118,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               <input 
                 type="text" 
                 placeholder="Nome da banda"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
                 value={formData.band_name}
                 onChange={e => setFormData(prev => ({ ...prev, band_name: e.target.value }))}
               />
@@ -118,7 +130,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
               <input 
                 type="text" 
                 placeholder="Onde será?"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-slate-600 transition-colors"
                 value={formData.location}
                 onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
               />
@@ -171,7 +183,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           </button>
           <button 
             onClick={handleSubmit}
-            className="flex-[2] px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+            className="flex-[2] px-4 py-3 rounded-xl bg-slate-700 text-white font-bold hover:bg-slate-600 shadow-lg shadow-slate-700/20 transition-all active:scale-95"
           >
             {initialData ? 'Salvar Alterações' : 'Confirmar Evento'}
           </button>

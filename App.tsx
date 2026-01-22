@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, LayoutDashboard, Calendar, DollarSign, BrainCircuit, Menu, Eye, EyeOff, Cloud, Loader2, User } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar, DollarSign, BrainCircuit, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload } from 'lucide-react';
 import { Gig, GigStatus, FinancialStats } from './types';
 import { getMusicianInsights } from './services/geminiService';
 import { gigService } from './services/gigService';
+import { importService } from './services/importService';
 import { authService, UserProfile } from './services/authService';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import GigModal from './components/GigModal';
@@ -21,6 +22,7 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [editingGig, setEditingGig] = useState<Gig | null>(null);
+  const [preSelectedDate, setPreSelectedDate] = useState<string | null>(null);
   const [insights, setInsights] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
@@ -33,6 +35,8 @@ const App: React.FC = () => {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Carregar dados do Supabase quando usuário estiver autenticado
   useEffect(() => {
@@ -226,16 +230,64 @@ const App: React.FC = () => {
     a.click();
   };
 
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      // Parse file
+      const rows = await importService.parseFile(file);
+      
+      if (rows.length === 0) {
+        alert('Nenhum dado encontrado no arquivo.');
+        setIsImporting(false);
+        return;
+      }
+
+      // Convert to gigs
+      const newGigs = importService.convertToGigs(rows, user.id);
+      
+      // Confirm import
+      const confirmed = confirm(`Encontrados ${newGigs.length} eventos no arquivo. Deseja importar todos?`);
+      if (!confirmed) {
+        setIsImporting(false);
+        return;
+      }
+
+      // Create gigs in Supabase
+      for (const gig of newGigs) {
+        await gigService.createGig(gig);
+      }
+
+      // Reload gigs
+      await loadGigs();
+      alert(`✅ ${newGigs.length} eventos importados com sucesso!`);
+    } catch (error: any) {
+      console.error('Erro ao importar:', error);
+      alert(`Erro ao importar: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      setIsImporting(false);
+      // Reset input
+      if (importInputRef.current) {
+        importInputRef.current.value = '';
+      }
+    }
+  };
+
   // Se não estiver autenticado, mostrar apenas tela de login
   if (!user && !loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="bg-indigo-600 p-4 rounded-2xl inline-block mb-4">
+            <div className="bg-slate-700 p-4 rounded-2xl inline-block mb-4">
               <Calendar className="w-12 h-12 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">GigTrack <span className="text-indigo-500">Pro</span></h1>
+            <h1 className="text-3xl font-bold text-white mb-2">GigTrack <span className="text-slate-400">Pro</span></h1>
             <p className="text-slate-400">Sua agenda de shows profissional</p>
           </div>
           <AuthModal 
@@ -274,28 +326,55 @@ const App: React.FC = () => {
               <Menu size={24} />
             </button>
             <div className="flex items-center gap-2">
-              <div className="bg-indigo-600 p-2 rounded-lg">
+              <div className="bg-slate-700 p-2 rounded-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-white hidden sm:block">GigTrack <span className="text-indigo-500">Pro</span></h1>
+              <h1 className="text-xl font-bold tracking-tight text-white hidden sm:block">GigTrack <span className="text-slate-400">Pro</span></h1>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            {isSyncing && <div className="flex items-center gap-2 text-[10px] font-bold text-indigo-400 animate-pulse bg-indigo-500/10 px-3 py-1.5 rounded-full border border-indigo-500/20"><Cloud size={12}/> SYNC...</div>}
+            {isSyncing && <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 animate-pulse bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700"><Cloud size={12}/> SYNC...</div>}
+            {isImporting && <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 animate-pulse bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700"><Upload size={12}/> IMPORTANDO...</div>}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleImportFile}
+              className="hidden"
+            />
+            <button
+              onClick={() => {
+                if (!user) {
+                  setIsAuthModalOpen(true);
+                } else {
+                  importInputRef.current?.click();
+                }
+              }}
+              disabled={isImporting}
+              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors disabled:opacity-50"
+              title="Importar Excel/CSV"
+            >
+              <Upload size={20} />
+            </button>
             <button 
               onClick={() => setIsAuthModalOpen(true)} 
               className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors"
               title="Minha Conta"
             >
-              <User size={20} className="text-indigo-500" />
+              <User size={20} className="text-slate-300" />
             </button>
             <button 
               onClick={() => { 
-                setEditingGig(null); 
-                setIsModalOpen(true); 
+                if (!user) {
+                  setIsAuthModalOpen(true);
+                } else {
+                  setEditingGig(null);
+                  setPreSelectedDate(null);
+                  setIsModalOpen(true);
+                }
               }} 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+              className="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-slate-700/20"
             >
               <Plus size={18} />
               <span>Novo Show</span>
@@ -318,11 +397,31 @@ const App: React.FC = () => {
                 endDate={endDate}
                 onStartChange={setStartDate}
                 onEndChange={setEndDate}
-                onClear={() => { setStartDate(''); setEndDate(''); }}
+                onClear={() => { setStartDate(''); setEndDate(''); setSelectedCalendarDate(null); }}
                 isActive={isPeriodActive}
                 stats={stats}
                 gigCount={filteredGigs.length}
                 showValues={showValues}
+                onQuickFilter={(type) => {
+                  const today = new Date();
+                  let start: Date;
+                  let end: Date = new Date(today);
+                  
+                  if (type === 'week') {
+                    start = new Date(today);
+                    start.setDate(today.getDate() - 7);
+                  } else if (type === 'month') {
+                    start = new Date(today);
+                    start.setMonth(today.getMonth() - 1);
+                  } else { // year
+                    start = new Date(today);
+                    start.setFullYear(today.getFullYear() - 1);
+                  }
+                  
+                  setStartDate(start.toISOString().split('T')[0]);
+                  setEndDate(end.toISOString().split('T')[0]);
+                  setSelectedCalendarDate(null);
+                }}
               />
               <CalendarView 
                 gigs={gigs} 
@@ -331,7 +430,15 @@ const App: React.FC = () => {
                 onDateSelect={(date) => {
                   setSelectedCalendarDate(date);
                   if (date) { setStartDate(''); setEndDate(''); }
-                }} 
+                }}
+                onDateClick={(date) => {
+                  setSelectedCalendarDate(null);
+                  setStartDate('');
+                  setEndDate('');
+                  setEditingGig(null);
+                  setPreSelectedDate(date);
+                  setIsModalOpen(true);
+                }}
               />
               <section className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
@@ -346,7 +453,7 @@ const App: React.FC = () => {
 
             <div className="lg:col-span-8">
               <h2 className="text-2xl font-bold flex items-center gap-3 text-white mb-8">
-                <LayoutDashboard size={24} className="text-indigo-500" />
+                <LayoutDashboard size={24} className="text-slate-400" />
                 {isPeriodActive ? 'Filtro de Período' : (selectedCalendarDate ? 'Data Selecionada' : 'Minha Agenda')}
               </h2>
 
@@ -372,7 +479,29 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {isModalOpen && <GigModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleSaveGig} initialData={editingGig} />}
+      {isModalOpen && (
+        <GigModal 
+          isOpen={isModalOpen} 
+          onClose={() => {
+            setIsModalOpen(false);
+            setPreSelectedDate(null);
+          }} 
+          onSubmit={(gig) => {
+            handleSaveGig(gig);
+            setPreSelectedDate(null);
+          }} 
+          initialData={editingGig || (preSelectedDate ? {
+            id: '',
+            title: '',
+            date: preSelectedDate,
+            location: '',
+            value: 0,
+            status: GigStatus.PENDING,
+            band_name: '',
+            notes: ''
+          } : null)}
+        />
+      )}
       {isAuthModalOpen && (
         <AuthModal 
           isOpen={isAuthModalOpen} 

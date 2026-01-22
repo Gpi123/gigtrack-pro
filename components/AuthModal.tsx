@@ -86,7 +86,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
                   <img 
                     src={profile.avatar_url} 
                     alt="Avatar" 
-                    className="w-16 h-16 rounded-full mx-auto border-2 border-indigo-500"
+                    className="w-16 h-16 rounded-full mx-auto border-2 border-slate-600"
                   />
                 )}
                 <div className="text-center">
