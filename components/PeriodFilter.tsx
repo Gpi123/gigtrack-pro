@@ -57,19 +57,19 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
             onClick={() => onQuickFilter('week')}
             className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
           >
-            Última Semana
+            Esta Semana
           </button>
           <button
             onClick={() => onQuickFilter('month')}
             className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
           >
-            Último Mês
+            Mês Atual
           </button>
           <button
             onClick={() => onQuickFilter('year')}
             className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
           >
-            Último Ano
+            Ano Atual
           </button>
         </div>
 

@@ -28,7 +28,6 @@ const App: React.FC = () => {
   const [insights, setInsights] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
-  const [selectedGigIds, setSelectedGigIds] = useState<Set<string>>(new Set());
   const [showValues, setShowValues] = useState(true);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -418,17 +417,29 @@ const App: React.FC = () => {
                 onQuickFilter={(type) => {
                   const today = new Date();
                   let start: Date;
-                  let end: Date = new Date(today);
+                  let end: Date;
                   
                   if (type === 'week') {
+                    // Esta semana: segunda a domingo da semana atual
+                    const dayOfWeek = today.getDay(); // 0 = domingo, 1 = segunda, etc.
+                    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Se domingo, volta 6 dias; senão, calcula para segunda
                     start = new Date(today);
-                    start.setDate(today.getDate() - 7);
+                    start.setDate(today.getDate() + diffToMonday);
+                    start.setHours(0, 0, 0, 0);
+                    
+                    end = new Date(start);
+                    end.setDate(start.getDate() + 6); // Domingo da mesma semana
+                    end.setHours(23, 59, 59, 999);
                   } else if (type === 'month') {
-                    start = new Date(today);
-                    start.setMonth(today.getMonth() - 1);
+                    // Mês atual: primeiro ao último dia do mês atual
+                    start = new Date(today.getFullYear(), today.getMonth(), 1);
+                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Último dia do mês
+                    end.setHours(23, 59, 59, 999);
                   } else { // year
-                    start = new Date(today);
-                    start.setFullYear(today.getFullYear() - 1);
+                    // Ano atual: primeiro dia do ano ao último dia do ano
+                    start = new Date(today.getFullYear(), 0, 1); // 1º de janeiro
+                    end = new Date(today.getFullYear(), 11, 31); // 31 de dezembro
+                    end.setHours(23, 59, 59, 999);
                   }
                   
                   setStartDate(start.toISOString().split('T')[0]);
@@ -493,8 +504,6 @@ const App: React.FC = () => {
                   onToggleStatus={toggleGigStatus} 
                   onDelete={handleDeleteGig}
                   onEdit={gig => { setEditingGig(gig); setIsModalOpen(true); }}
-                  selectedGigIds={selectedGigIds}
-                  onToggleSelect={id => setSelectedGigIds(prev => { const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })}
                   showValues={showValues}
                 />
               )}
