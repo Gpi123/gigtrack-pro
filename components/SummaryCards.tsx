@@ -45,7 +45,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
+    <div className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-3">
       {cardData.map((card, index) => (
         <div 
           key={index}

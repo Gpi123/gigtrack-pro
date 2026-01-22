@@ -12,8 +12,7 @@ import AuthModal from './components/AuthModal';
 import ConfirmModal from './components/ConfirmModal';
 import SummaryCards from './components/SummaryCards';
 import GigList from './components/GigList';
-import CalendarView from './components/CalendarView';
-import PeriodFilter from './components/PeriodFilter';
+import CalendarWithFilters from './components/CalendarWithFilters';
 import SideMenu from './components/SideMenu';
 
 const App: React.FC = () => {
@@ -29,6 +28,8 @@ const App: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [showValues, setShowValues] = useState(true);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedGigIds, setSelectedGigIds] = useState<Set<string>>(new Set());
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -165,6 +166,27 @@ const App: React.FC = () => {
     } catch (error: any) {
       console.error('Erro ao limpar agenda:', error);
       alert(error.message || 'Erro ao limpar agenda');
+    }
+  };
+
+  const handleDeleteMultiple = async () => {
+    if (selectedGigIds.size === 0) return;
+    
+    try {
+      setIsSyncing(true);
+      const idsToDelete = Array.from(selectedGigIds) as string[];
+      for (const id of idsToDelete) {
+        await gigService.deleteGig(id);
+      }
+      await loadGigs();
+      setSelectedGigIds(new Set());
+      setIsMultiSelectMode(false);
+      alert(`✅ ${idsToDelete.length} evento(s) excluído(s) com sucesso!`);
+    } catch (error: any) {
+      console.error('Erro ao excluir eventos:', error);
+      alert(error.message || 'Erro ao excluir eventos');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -386,10 +408,10 @@ const App: React.FC = () => {
                   setIsModalOpen(true);
                 }
               }} 
-              className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/20"
+              className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-3 py-3 sm:px-5 sm:py-2.5 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/20"
             >
               <Plus size={18} />
-              <span>Novo Show</span>
+              <span className="hidden sm:inline">Novo Show</span>
             </button>
           </div>
         </div>
@@ -402,55 +424,13 @@ const App: React.FC = () => {
             <p className="text-white font-bold uppercase tracking-widest text-[10px]">Carregando...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            <div className="lg:col-span-4 space-y-8">
-              <PeriodFilter 
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pb-32 lg:pb-8">
+            <div className="lg:col-span-4">
+              <CalendarWithFilters
+                gigs={gigs}
+                selectedDate={selectedCalendarDate}
                 startDate={startDate}
                 endDate={endDate}
-                onStartChange={setStartDate}
-                onEndChange={setEndDate}
-                onClear={() => { setStartDate(''); setEndDate(''); setSelectedCalendarDate(null); }}
-                isActive={isPeriodActive}
-                stats={stats}
-                gigCount={filteredGigs.length}
-                showValues={showValues}
-                onQuickFilter={(type) => {
-                  const today = new Date();
-                  let start: Date;
-                  let end: Date;
-                  
-                  if (type === 'week') {
-                    // Esta semana: segunda a domingo da semana atual
-                    const dayOfWeek = today.getDay(); // 0 = domingo, 1 = segunda, etc.
-                    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Se domingo, volta 6 dias; senão, calcula para segunda
-                    start = new Date(today);
-                    start.setDate(today.getDate() + diffToMonday);
-                    start.setHours(0, 0, 0, 0);
-                    
-                    end = new Date(start);
-                    end.setDate(start.getDate() + 6); // Domingo da mesma semana
-                    end.setHours(23, 59, 59, 999);
-                  } else if (type === 'month') {
-                    // Mês atual: primeiro ao último dia do mês atual
-                    start = new Date(today.getFullYear(), today.getMonth(), 1);
-                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Último dia do mês
-                    end.setHours(23, 59, 59, 999);
-                  } else { // year
-                    // Ano atual: primeiro dia do ano ao último dia do ano
-                    start = new Date(today.getFullYear(), 0, 1); // 1º de janeiro
-                    end = new Date(today.getFullYear(), 11, 31); // 31 de dezembro
-                    end.setHours(23, 59, 59, 999);
-                  }
-                  
-                  setStartDate(start.toISOString().split('T')[0]);
-                  setEndDate(end.toISOString().split('T')[0]);
-                  setSelectedCalendarDate(null);
-                }}
-              />
-              <CalendarView 
-                gigs={gigs} 
-                selectedDate={selectedCalendarDate} 
-                showValues={showValues}
                 onDateSelect={(date) => {
                   setSelectedCalendarDate(date);
                   if (date) { setStartDate(''); setEndDate(''); }
@@ -463,8 +443,43 @@ const App: React.FC = () => {
                   setPreSelectedDate(date);
                   setIsModalOpen(true);
                 }}
+                onQuickFilter={(type) => {
+                  const today = new Date();
+                  let start: Date;
+                  let end: Date;
+                  
+                  if (type === 'week') {
+                    const dayOfWeek = today.getDay();
+                    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                    start = new Date(today);
+                    start.setDate(today.getDate() + diffToMonday);
+                    start.setHours(0, 0, 0, 0);
+                    
+                    end = new Date(start);
+                    end.setDate(start.getDate() + 6);
+                    end.setHours(23, 59, 59, 999);
+                  } else if (type === 'month') {
+                    start = new Date(today.getFullYear(), today.getMonth(), 1);
+                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    end.setHours(23, 59, 59, 999);
+                  } else {
+                    start = new Date(today.getFullYear(), 0, 1);
+                    end = new Date(today.getFullYear(), 11, 31);
+                    end.setHours(23, 59, 59, 999);
+                  }
+                  
+                  setStartDate(start.toISOString().split('T')[0]);
+                  setEndDate(end.toISOString().split('T')[0]);
+                  setSelectedCalendarDate(null);
+                }}
+                onClear={() => { setStartDate(''); setEndDate(''); setSelectedCalendarDate(null); }}
+                showValues={showValues}
+                stats={stats}
+                gigCount={filteredGigs.length}
               />
-              <section className="space-y-4">
+              
+              {/* Resumo Financeiro fixo no desktop */}
+              <section className="hidden lg:block mt-8 space-y-4 sticky top-24">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold text-white uppercase tracking-widest">Resumo Financeiro</h3>
                   <button onClick={() => setShowValues(!showValues)} className={`p-1.5 rounded-lg border transition-all ${showValues ? 'bg-[#24272D] border-[#31333B] text-white' : 'bg-[#3057F2]/10 border-[#3057F2]/20 text-[#3057F2]'}`}>
@@ -483,11 +498,45 @@ const App: React.FC = () => {
                 </h2>
                 {filteredGigs.length > 0 && !isPeriodActive && !selectedCalendarDate && (
                   <button
-                    onClick={() => setIsClearConfirmOpen(true)}
+                    onClick={() => {
+                      if (isMultiSelectMode) {
+                        setIsMultiSelectMode(false);
+                        setSelectedGigIds(new Set());
+                      } else {
+                        setIsMultiSelectMode(true);
+                      }
+                    }}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all"
                   >
                     <Trash2 size={16} />
-                    Limpar Agenda
+                    {isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}
+                  </button>
+                )}
+                {isMultiSelectMode && filteredGigs.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      if (selectedGigIds.size === filteredGigs.length) {
+                        setSelectedGigIds(new Set());
+                      } else {
+                        setSelectedGigIds(new Set(filteredGigs.map(g => g.id)));
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#3057F2]/20 hover:bg-[#3057F2]/30 text-[#3057F2] border border-[#3057F2]/30 rounded-xl font-semibold text-sm transition-all"
+                  >
+                    {selectedGigIds.size === filteredGigs.length ? 'Desmarcar Todas' : 'Selecionar Todas'}
+                  </button>
+                )}
+                {isMultiSelectMode && selectedGigIds.size > 0 && (
+                  <button
+                    onClick={() => {
+                      if (confirm(`Deseja excluir ${selectedGigIds.size} evento(s)?`)) {
+                        handleDeleteMultiple();
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-all"
+                  >
+                    <Trash2 size={16} />
+                    Excluir {selectedGigIds.size}
                   </button>
                 )}
               </div>
@@ -505,12 +554,36 @@ const App: React.FC = () => {
                   onDelete={handleDeleteGig}
                   onEdit={gig => { setEditingGig(gig); setIsModalOpen(true); }}
                   showValues={showValues}
+                  isMultiSelectMode={isMultiSelectMode}
+                  selectedGigIds={selectedGigIds}
+                  onToggleSelect={(id) => {
+                    const newSet = new Set(selectedGigIds);
+                    if (newSet.has(id)) {
+                      newSet.delete(id);
+                    } else {
+                      newSet.add(id);
+                    }
+                    setSelectedGigIds(newSet);
+                  }}
                 />
               )}
             </div>
           </div>
         )}
       </main>
+
+      {/* Footer fixo com Resumo Financeiro (mobile) */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-[#24272D] border-t border-[#31333B] z-30 lg:hidden shadow-2xl">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-bold text-white uppercase tracking-widest">Resumo Financeiro</h3>
+            <button onClick={() => setShowValues(!showValues)} className={`p-1.5 rounded-lg border transition-all ${showValues ? 'bg-[#24272D] border-[#31333B] text-white' : 'bg-[#3057F2]/10 border-[#3057F2]/20 text-[#3057F2]'}`}>
+              {showValues ? <Eye size={14} /> : <EyeOff size={14} />}
+            </button>
+          </div>
+          <SummaryCards stats={stats} showValues={showValues} />
+        </div>
+      </footer>
 
       {isModalOpen && (
         <GigModal 

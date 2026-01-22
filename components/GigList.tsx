@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, MapPin, Music, Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { Calendar, MapPin, Music, Edit2, Trash2, CheckCircle2, Circle, Square, CheckSquare } from 'lucide-react';
 import { Gig, GigStatus } from '../types';
 
 interface GigListProps {
@@ -9,9 +9,21 @@ interface GigListProps {
   onDelete: (id: string) => void;
   onEdit: (gig: Gig) => void;
   showValues: boolean;
+  isMultiSelectMode?: boolean;
+  selectedGigIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
-const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdit, showValues }) => {
+const GigList: React.FC<GigListProps> = ({ 
+  gigs, 
+  onToggleStatus, 
+  onDelete, 
+  onEdit, 
+  showValues,
+  isMultiSelectMode = false,
+  selectedGigIds = new Set(),
+  onToggleSelect
+}) => {
   const formatCurrency = (val?: number) => {
     if (val === undefined || val === 0) return null;
     if (!showValues) return 'R$ ••••';
@@ -28,23 +40,34 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
       {gigs.map((gig) => {
         const dateObj = getSafeDate(gig.date);
         const displayValue = formatCurrency(gig.value);
+        const isSelected = selectedGigIds.has(gig.id);
         
         return (
           <div 
             key={gig.id} 
             className={`group bg-[#24272D] border transition-all hover:bg-[#1E1F25] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+              isMultiSelectMode && isSelected ? 'border-[#3057F2] bg-[#1E1F25]' :
               gig.status === GigStatus.PAID ? 'border-emerald-500/20 opacity-90' : 'border-[#31333B]'
             }`}
           >
             <div className="flex items-center gap-4 w-full sm:w-auto">
-              {/* Botão de marcar como pago na esquerda */}
-              <button 
-                onClick={() => onToggleStatus(gig.id)}
-                title={gig.status === GigStatus.PAID ? 'Marcar como pendente' : 'Marcar como pago'}
-                className={`flex-shrink-0 p-2 rounded-lg transition-colors ${gig.status === GigStatus.PAID ? 'text-emerald-400 bg-emerald-400/10' : 'text-white hover:text-emerald-400 hover:bg-emerald-400/10'}`}
-              >
-                {gig.status === GigStatus.PAID ? <CheckCircle2 size={20} /> : <Circle size={20} />}
-              </button>
+              {/* Checkbox de seleção múltipla ou botão de marcar como pago */}
+              {isMultiSelectMode ? (
+                <button 
+                  onClick={() => onToggleSelect?.(gig.id)}
+                  className={`flex-shrink-0 transition-colors ${isSelected ? 'text-[#3057F2]' : 'text-white'}`}
+                >
+                  {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
+                </button>
+              ) : (
+                <button 
+                  onClick={() => onToggleStatus(gig.id)}
+                  title={gig.status === GigStatus.PAID ? 'Marcar como pendente' : 'Marcar como pago'}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-colors ${gig.status === GigStatus.PAID ? 'text-emerald-400 bg-emerald-400/10' : 'text-white hover:text-emerald-400 hover:bg-emerald-400/10'}`}
+                >
+                  {gig.status === GigStatus.PAID ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                </button>
+              )}
 
               <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 ${gig.status === GigStatus.PAID ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#1E1F25] text-white'}`}>
                 <span className="text-[10px] uppercase font-bold">
@@ -80,22 +103,24 @@ const GigList: React.FC<GigListProps> = ({ gigs, onToggleStatus, onDelete, onEdi
                 </div>
               </div>
 
-              {/* Botões de editar e excluir na direita */}
-              <div className="flex items-center gap-1">
-                <button 
-                  onClick={() => onEdit(gig)}
-                  className="p-2 text-white hover:text-white hover:bg-[#24272D] rounded-lg transition-colors"
-                >
-                  <Edit2 size={20} />
-                </button>
-                
-                <button 
-                  onClick={() => onDelete(gig.id)}
-                  className="p-2 text-white hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                >
-                  <Trash2 size={20} />
-                </button>
-              </div>
+              {/* Botões de editar e excluir na direita (ocultos no modo multiseleção) */}
+              {!isMultiSelectMode && (
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => onEdit(gig)}
+                    className="p-2 text-white hover:text-white hover:bg-[#24272D] rounded-lg transition-colors"
+                  >
+                    <Edit2 size={20} />
+                  </button>
+                  
+                  <button 
+                    onClick={() => onDelete(gig.id)}
+                    className="p-2 text-white hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
