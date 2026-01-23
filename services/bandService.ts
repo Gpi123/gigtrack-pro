@@ -36,14 +36,51 @@ export const bandService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase
+    // Buscar bandas onde o usuário é owner
+    const { data: ownedBands, error: ownedError } = await supabase
       .from('bands')
       .select('*')
-      .or(`owner_id.eq.${user.id},id.in.(select band_id from band_members where user_id.eq.${user.id})`)
+      .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data || [];
+    if (ownedError) throw ownedError;
+
+    // Buscar bandas onde o usuário é membro
+    const { data: memberBands, error: memberError } = await supabase
+      .from('band_members')
+      .select('band_id, bands(*)')
+      .eq('user_id', user.id);
+
+    if (memberError) throw memberError;
+
+    // Combinar e remover duplicatas
+    const allBands: Band[] = [];
+    const bandIds = new Set<string>();
+
+    // Adicionar bandas próprias
+    if (ownedBands) {
+      ownedBands.forEach(band => {
+        if (!bandIds.has(band.id)) {
+          bandIds.add(band.id);
+          allBands.push(band);
+        }
+      });
+    }
+
+    // Adicionar bandas onde é membro
+    if (memberBands) {
+      memberBands.forEach((item: any) => {
+        if (item.bands && !bandIds.has(item.bands.id)) {
+          bandIds.add(item.bands.id);
+          allBands.push(item.bands);
+        }
+      });
+    }
+
+    // Ordenar por created_at
+    return allBands.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   },
 
   // Buscar membros de uma banda

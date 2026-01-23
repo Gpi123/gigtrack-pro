@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, LayoutDashboard, Calendar, DollarSign, BrainCircuit, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload, Trash2, Search, Filter } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar, DollarSign, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload, Trash2, Search, Filter } from 'lucide-react';
 import { Gig, GigStatus, FinancialStats } from './types';
-import { getMusicianInsights } from './services/geminiService';
 import { gigService } from './services/gigService';
 import { importService } from './services/importService';
 import { authService, UserProfile } from './services/authService';
@@ -29,8 +28,6 @@ const App: React.FC = () => {
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [editingGig, setEditingGig] = useState<Gig | null>(null);
   const [preSelectedDate, setPreSelectedDate] = useState<string | null>(null);
-  const [insights, setInsights] = useState<string>('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [showValues, setShowValues] = useState(true);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -444,18 +441,6 @@ const App: React.FC = () => {
     }, { totalReceived: 0, totalPending: 0, overallTotal: 0 });
   }, [filteredGigs]);
 
-  const generateInsights = async () => {
-    if (gigs.length === 0) return;
-    setIsAnalyzing(true);
-    try {
-      const result = await getMusicianInsights(gigs);
-      setInsights(result);
-    } catch (err) {
-      setInsights("Erro ao gerar insights.");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
 
   const handleExportBackup = () => {
     const blob = new Blob([JSON.stringify(gigs, null, 2)], { type: 'application/json' });
@@ -574,9 +559,6 @@ const App: React.FC = () => {
       <SideMenu 
         isOpen={isMenuOpen} 
         onClose={() => setIsMenuOpen(false)} 
-        onGenerateInsights={generateInsights}
-        isAnalyzing={isAnalyzing}
-        insights={insights}
         selectedBandId={selectedBandId}
         onBandSelect={setSelectedBandId}
       />

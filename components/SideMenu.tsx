@@ -1,21 +1,17 @@
 
 import React from 'react';
-import { X, BrainCircuit, Loader2, Info } from 'lucide-react';
+import { X } from 'lucide-react';
 import BandManager from './BandManager';
 
 interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerateInsights: () => void;
-  isAnalyzing: boolean;
-  insights: string;
   selectedBandId: string | null;
   onBandSelect: (bandId: string | null) => void;
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
-  isOpen, onClose, 
-  onGenerateInsights, isAnalyzing, insights,
+  isOpen, onClose,
   selectedBandId, onBandSelect
 }) => {
 
@@ -48,27 +44,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
               onBandSelect={onBandSelect}
               selectedBandId={selectedBandId}
             />
-          </section>
-
-          {/* AI Section */}
-          <section className="space-y-4">
-            <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] flex items-center gap-2">
-              <BrainCircuit size={14} className="text-white" /> GigTrack AI
-            </h3>
-            <div className="bg-[#1E1F25] border border-[#31333B] rounded-3xl p-6">
-               <button onClick={onGenerateInsights} disabled={isAnalyzing} className="w-full bg-[#3057F2] hover:bg-[#2545D9] text-white border border-[#3057F2] py-4 rounded-2xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-3">
-                {isAnalyzing ? <Loader2 size={18} className="animate-spin" /> : <BrainCircuit size={18} />}
-                {isAnalyzing ? 'Analisando...' : 'Insights Financeiros'}
-              </button>
-              {insights && (
-                <div className="mt-5 bg-[#1E1F25] rounded-2xl p-5 border border-[#31333B] text-[11px] leading-relaxed text-white whitespace-pre-line animate-in fade-in duration-700">
-                  <div className="flex items-center gap-2 mb-3 text-white font-black uppercase tracking-widest text-[8px]">
-                    <Info size={10} /> Relatório Inteligente
-                  </div>
-                  {insights}
-                </div>
-              )}
-            </div>
           </section>
         </div>
 
