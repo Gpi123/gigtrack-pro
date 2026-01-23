@@ -83,25 +83,26 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
               <label className="text-xs font-bold text-white uppercase">
                 Data
               </label>
               <input 
                 required
                 type="date" 
-                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm min-w-0"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm"
                 value={formData.date}
                 onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
                 style={{
                   colorScheme: 'dark',
                   WebkitAppearance: 'none',
-                  appearance: 'none'
+                  appearance: 'none',
+                  fontSize: '16px' // Prevents zoom on iOS
                 }}
               />
             </div>
-            <div className="space-y-1 min-w-0">
+            <div className="space-y-1">
               <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <DollarSign size={12} /> Valor (R$)
               </label>
@@ -109,34 +110,34 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
                 type="number" 
                 step="0.01"
                 placeholder="Opcional"
-                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm min-w-0 truncate"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm"
                 value={formData.value}
                 onChange={e => setFormData(prev => ({ ...prev, value: e.target.value }))}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
               <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <Music size={12} /> Banda / Projeto
               </label>
               <input 
                 type="text" 
                 placeholder="Nome da banda"
-                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm min-w-0 truncate"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm"
                 value={formData.band_name}
                 onChange={e => setFormData(prev => ({ ...prev, band_name: e.target.value }))}
               />
             </div>
-            <div className="space-y-1 min-w-0">
+            <div className="space-y-1">
               <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <MapPin size={12} /> Local
               </label>
               <input 
                 type="text" 
                 placeholder="Onde será?"
-                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm min-w-0 truncate"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm"
                 value={formData.location}
                 onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
               />

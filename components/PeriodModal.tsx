@@ -49,35 +49,43 @@ const PeriodModal: React.FC<PeriodModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <CalendarIcon size={12} /> Data Início
               </label>
-              <div className="relative">
-                <input 
-                  required
-                  type="date" 
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
-                />
-              </div>
+              <input 
+                required
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm"
+                style={{
+                  colorScheme: 'dark',
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  fontSize: '16px' // Prevents zoom on iOS
+                }}
+              />
             </div>
             
             <div className="space-y-1">
               <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <CalendarIcon size={12} /> Data Fim
               </label>
-              <div className="relative">
-                <input 
-                  required
-                  type="date" 
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
-                />
-              </div>
+              <input 
+                required
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm"
+                style={{
+                  colorScheme: 'dark',
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                  fontSize: '16px' // Prevents zoom on iOS
+                }}
+              />
             </div>
           </div>
 
