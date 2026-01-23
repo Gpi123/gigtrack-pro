@@ -276,10 +276,10 @@ const App: React.FC = () => {
     }
   };
 
-  const isLoadingBulkOperation = isImporting || (isSyncing && (selectedGigIds.size > 0 || importPreviewGigs.length > 0));
+  const isLoadingBulkOperation = isImporting || importingCount > 0 || (isSyncing && selectedGigIds.size > 0);
 
   const getLoadingMessage = () => {
-    if (isImporting) {
+    if (isImporting || importingCount > 0) {
       // Use importingCount if available, otherwise try importPreviewGigs length
       const count = importingCount || importPreviewGigs.length;
       if (count > 0) {
@@ -443,13 +443,15 @@ const App: React.FC = () => {
         await Promise.all(batch.map(gig => gigService.createGig(gig)));
       }
 
-      // Clear preview and count after import completes
+      // Clear preview after import completes (but keep count until loading finishes)
       setImportPreviewGigs([]);
-      setImportingCount(0);
       
       // Reload gigs
       await loadGigs();
       toast.success(`${totalCount} eventos importados com sucesso!`);
+      
+      // Clear count after everything completes
+      setImportingCount(0);
     } catch (error: any) {
       console.error('Erro ao importar:', error);
       toast.error(`Erro ao importar: ${error.message || 'Erro desconhecido'}`);
