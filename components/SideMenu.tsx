@@ -1,25 +1,22 @@
 
 import React from 'react';
 import { X, BrainCircuit, Loader2, Info } from 'lucide-react';
+import BandManager from './BandManager';
 
 interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  syncId: string;
-  onSetSyncId: (id: string) => void;
-  lastSync: number;
-  onCloudSync: () => void;
-  onImportCloud: (id: string) => void;
-  isSyncing: boolean;
-  onExportBackup: () => void;
   onGenerateInsights: () => void;
   isAnalyzing: boolean;
   insights: string;
+  selectedBandId: string | null;
+  onBandSelect: (bandId: string | null) => void;
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
   isOpen, onClose, 
-  onGenerateInsights, isAnalyzing, insights
+  onGenerateInsights, isAnalyzing, insights,
+  selectedBandId, onBandSelect
 }) => {
 
   if (!isOpen) return null;
@@ -45,6 +42,14 @@ const SideMenu: React.FC<SideMenuProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-10">
+          {/* Band Manager Section */}
+          <section className="space-y-4">
+            <BandManager 
+              onBandSelect={onBandSelect}
+              selectedBandId={selectedBandId}
+            />
+          </section>
+
           {/* AI Section */}
           <section className="space-y-4">
             <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] flex items-center gap-2">

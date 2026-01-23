@@ -6,6 +6,8 @@ import { getMusicianInsights } from './services/geminiService';
 import { gigService } from './services/gigService';
 import { importService } from './services/importService';
 import { authService, UserProfile } from './services/authService';
+import { supabase } from './services/supabase';
+import { bandService } from './services/bandService';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import GigModal from './components/GigModal';
 import AuthModal from './components/AuthModal';
@@ -49,7 +51,15 @@ const App: React.FC = () => {
   const [importingCount, setImportingCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid'>('all');
+  const [selectedBandId, setSelectedBandId] = useState<string | null>(null);
   const toast = useToast();
+
+  // Recarregar gigs quando mudar o contexto (pessoal/banda)
+  useEffect(() => {
+    if (user) {
+      loadGigs();
+    }
+  }, [selectedBandId, user]);
 
   // Carregar dados do Supabase quando usuário estiver autenticado
   useEffect(() => {
@@ -156,11 +166,17 @@ const App: React.FC = () => {
       if (!silent) {
         setLoading(true);
       }
-      const data = await gigService.fetchGigs();
+      const data = await gigService.fetchGigs(selectedBandId);
       setGigs(data);
       
-      // Configurar real-time subscription apenas uma vez
-      if (!silent && !subscriptionRef.current) {
+      // Desinscrever da subscription anterior se houver
+      if (subscriptionRef.current) {
+        await supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+      
+      // Configurar real-time subscription para o contexto atual (pessoal ou banda)
+      if (!silent) {
         subscriptionRef.current = await gigService.subscribeToGigs((updatedGigs) => {
           // Atualizar apenas se realmente houver mudanças (evitar loops)
           setGigs(prevGigs => {
@@ -180,7 +196,7 @@ const App: React.FC = () => {
             
             return updatedGigs;
           });
-        });
+        }, selectedBandId);
       }
     } catch (error: any) {
       console.error('Erro ao carregar shows:', error);
@@ -214,7 +230,7 @@ const App: React.FC = () => {
         updateGigInState(updatedGig);
         toast.success('Show atualizado com sucesso!');
       } else {
-        const newGig = await gigService.createGig(gig);
+        const newGig = await gigService.createGig(gig, selectedBandId);
         setGigs(prevGigs => [...prevGigs, newGig].sort((a, b) => 
           a.date.localeCompare(b.date)
         ));
@@ -257,7 +273,7 @@ const App: React.FC = () => {
       toast.success(`"${gigTitle}" excluído com sucesso!`, 3000, () => {
         // Undo function - recriar o show
         if (deletedGig) {
-          gigService.createGig(deletedGig).then((newGig) => {
+          gigService.createGig(deletedGig, selectedBandId).then((newGig) => {
             setGigs(prevGigs => [...prevGigs, newGig].sort((a, b) => 
               a.date.localeCompare(b.date)
             ));
@@ -502,7 +518,7 @@ const App: React.FC = () => {
       
       for (let i = 0; i < gigsToImport.length; i += batchSize) {
         const batch = gigsToImport.slice(i, i + batchSize);
-        const batchResults = await Promise.all(batch.map(gig => gigService.createGig(gig)));
+        const batchResults = await Promise.all(batch.map(gig => gigService.createGig(gig, selectedBandId)));
         createdGigs.push(...batchResults);
       }
 
@@ -558,16 +574,11 @@ const App: React.FC = () => {
       <SideMenu 
         isOpen={isMenuOpen} 
         onClose={() => setIsMenuOpen(false)} 
-        syncId=""
-        onSetSyncId={() => {}}
-        lastSync={0}
-        onCloudSync={() => {}}
-        onImportCloud={() => {}}
-        isSyncing={false}
-        onExportBackup={() => {}}
         onGenerateInsights={generateInsights}
         isAnalyzing={isAnalyzing}
         insights={insights}
+        selectedBandId={selectedBandId}
+        onBandSelect={setSelectedBandId}
       />
 
       <header className="bg-[#24272D]/80 backdrop-blur-md border-b border-[#31333B] sticky top-0 z-40">
