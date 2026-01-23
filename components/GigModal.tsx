@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, MapPin, Music, FileText, Loader2 } from 'lucide-react';
+import { X, DollarSign, MapPin, Music, FileText, Loader2 } from 'lucide-react';
 import { Gig, GigStatus } from '../types';
 
 interface GigModalProps {
@@ -84,27 +84,32 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
-                <Calendar size={12} /> Data
+            <div className="space-y-1 min-w-0">
+              <label className="text-xs font-bold text-white uppercase">
+                Data
               </label>
               <input 
                 required
                 type="date" 
-                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm min-w-0"
                 value={formData.date}
                 onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                style={{
+                  colorScheme: 'dark',
+                  WebkitAppearance: 'none',
+                  appearance: 'none'
+                }}
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <DollarSign size={12} /> Valor (R$)
               </label>
               <input 
                 type="number" 
                 step="0.01"
-                placeholder="Opcional (A definir)"
-                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
+                placeholder="Opcional"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm min-w-0 truncate"
                 value={formData.value}
                 onChange={e => setFormData(prev => ({ ...prev, value: e.target.value }))}
               />
@@ -112,26 +117,26 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <Music size={12} /> Banda / Projeto
               </label>
               <input 
                 type="text" 
                 placeholder="Nome da banda"
-                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm min-w-0 truncate"
                 value={formData.band_name}
                 onChange={e => setFormData(prev => ({ ...prev, band_name: e.target.value }))}
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
                 <MapPin size={12} /> Local
               </label>
               <input 
                 type="text" 
                 placeholder="Onde será?"
-                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
+                className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors text-sm min-w-0 truncate"
                 value={formData.location}
                 onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
               />

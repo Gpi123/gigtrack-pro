@@ -15,6 +15,7 @@ import GigList from './components/GigList';
 import CalendarWithFilters from './components/CalendarWithFilters';
 import SideMenu from './components/SideMenu';
 import EmptyState from './components/EmptyState';
+import LoadingOverlay from './components/LoadingOverlay';
 import { ToastContainer, useToast } from './components/Toast';
 
 const App: React.FC = () => {
@@ -272,6 +273,18 @@ const App: React.FC = () => {
       setIsSyncing(false);
       setDeleteMultipleConfirmOpen(false);
     }
+  };
+
+  const isLoadingBulkOperation = isImporting || (isSyncing && (selectedGigIds.size > 0 || importPreviewGigs.length > 0));
+
+  const getLoadingMessage = () => {
+    if (isImporting) {
+      return `Importando ${importPreviewGigs.length} evento(s)...`;
+    }
+    if (isSyncing && selectedGigIds.size > 0) {
+      return `Excluindo ${selectedGigIds.size} evento(s)...`;
+    }
+    return 'Processando...';
   };
 
   const toggleGigStatus = async (id: string) => {
@@ -612,15 +625,15 @@ const App: React.FC = () => {
             </div>
 
             <div className="lg:col-span-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-                <h2 className="text-2xl font-bold flex items-center gap-3 text-white">
-                  <LayoutDashboard size={24} className="text-white" />
-                  {isPeriodActive ? 'Filtro de Período' : (selectedCalendarDate ? 'Data Selecionada' : 'Minha Agenda')}
+              <div className="flex flex-col gap-4 mb-8">
+                <h2 className="text-2xl font-bold flex items-center gap-3 text-white whitespace-nowrap">
+                  <LayoutDashboard size={24} className="text-white flex-shrink-0" />
+                  <span className="whitespace-nowrap">{isPeriodActive ? 'Filtro de Período' : (selectedCalendarDate ? 'Data Selecionada' : 'Minha Agenda')}</span>
                 </h2>
                 
                 {/* Busca e Filtros */}
                 {!isPeriodActive && !selectedCalendarDate && (
-                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
                     {/* Busca */}
                     <div className="relative flex-1 sm:flex-initial">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={18} />
@@ -670,43 +683,45 @@ const App: React.FC = () => {
                 )}
                 
                 {filteredGigs.length > 0 && !isPeriodActive && !selectedCalendarDate && (
-                  <button
-                    onClick={() => {
-                      if (isMultiSelectMode) {
-                        setIsMultiSelectMode(false);
-                        setSelectedGigIds(new Set());
-                      } else {
-                        setIsMultiSelectMode(true);
-                      }
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all"
-                  >
-                    <Trash2 size={16} />
-                    {isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}
-                  </button>
-                )}
-                {isMultiSelectMode && filteredGigs.length > 0 && (
-                  <button
-                    onClick={async () => {
-                      if (selectedGigIds.size === filteredGigs.length) {
-                        setSelectedGigIds(new Set());
-                      } else {
-                        setSelectedGigIds(new Set(filteredGigs.map(g => g.id)));
-                      }
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#3057F2]/20 hover:bg-[#3057F2]/30 text-[#3057F2] border border-[#3057F2]/30 rounded-xl font-semibold text-sm transition-all"
-                  >
-                    {selectedGigIds.size === filteredGigs.length ? 'Desmarcar Todas' : 'Selecionar Todas'}
-                  </button>
-                )}
-                {isMultiSelectMode && selectedGigIds.size > 0 && (
-                  <button
-                    onClick={handleDeleteMultiple}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-all"
-                  >
-                    <Trash2 size={16} />
-                    Excluir {selectedGigIds.size}
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => {
+                        if (isMultiSelectMode) {
+                          setIsMultiSelectMode(false);
+                          setSelectedGigIds(new Set());
+                        } else {
+                          setIsMultiSelectMode(true);
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all"
+                    >
+                      <Trash2 size={16} />
+                      {isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}
+                    </button>
+                    {isMultiSelectMode && filteredGigs.length > 0 && (
+                      <button
+                        onClick={async () => {
+                          if (selectedGigIds.size === filteredGigs.length) {
+                            setSelectedGigIds(new Set());
+                          } else {
+                            setSelectedGigIds(new Set(filteredGigs.map(g => g.id)));
+                          }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#3057F2]/20 hover:bg-[#3057F2]/30 text-[#3057F2] border border-[#3057F2]/30 rounded-xl font-semibold text-sm transition-all"
+                      >
+                        {selectedGigIds.size === filteredGigs.length ? 'Desmarcar Todas' : 'Selecionar Todas'}
+                      </button>
+                    )}
+                    {isMultiSelectMode && selectedGigIds.size > 0 && (
+                      <button
+                        onClick={handleDeleteMultiple}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-all"
+                      >
+                        <Trash2 size={16} />
+                        Excluir {selectedGigIds.size}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -783,6 +798,12 @@ const App: React.FC = () => {
       )}
       {/* Toast Container */}
       <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
+
+      {/* Loading Overlay para operações em massa */}
+      <LoadingOverlay 
+        isVisible={isLoadingBulkOperation} 
+        message={getLoadingMessage()}
+      />
 
       {/* Modal de Confirmação - Limpar Agenda */}
       {isClearConfirmOpen && (
