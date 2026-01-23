@@ -717,7 +717,7 @@ const App: React.FC = () => {
                       }}
                       className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all"
                     >
-                      <Trash2 size={16} />
+                      {!isMultiSelectMode && <Trash2 size={16} />}
                       {isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}
                     </button>
                     {isMultiSelectMode && filteredGigs.length > 0 && (
