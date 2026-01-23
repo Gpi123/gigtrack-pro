@@ -46,26 +46,67 @@ export const importService = {
             return dateStr;
           };
 
+          // Helper function to convert Excel serial number to date WITHOUT using Date()
+          const excelSerialToDate = (serial: number): string => {
+            // Excel epoch: January 1, 1900 = serial 1
+            // Excel incorrectly treats 1900 as a leap year, so we need to adjust
+            // For dates >= 60 (after Feb 28, 1900), subtract 1 day
+            
+            let totalDays = serial - 1; // Excel serial starts at 1, not 0
+            if (serial >= 60) {
+              totalDays = totalDays - 1; // Adjust for Excel's leap year bug
+            }
+            
+            // Calculate date manually from days since 1900-01-01
+            let year = 1900;
+            let month = 1;
+            let day = 1;
+            
+            // Add total days
+            let remainingDays = totalDays;
+            
+            // Calculate years
+            while (remainingDays >= 365) {
+              const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+              const daysInYear = isLeapYear ? 366 : 365;
+              
+              if (remainingDays >= daysInYear) {
+                remainingDays -= daysInYear;
+                year++;
+              } else {
+                break;
+              }
+            }
+            
+            // Calculate month and day
+            const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            
+            while (remainingDays > 0) {
+              const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+              const maxDays = month === 2 && isLeapYear ? 29 : daysInMonth[month - 1];
+              
+              if (remainingDays >= maxDays) {
+                remainingDays -= maxDays;
+                month++;
+                if (month > 12) {
+                  month = 1;
+                  year++;
+                }
+              } else {
+                day += remainingDays;
+                remainingDays = 0;
+              }
+            }
+            
+            return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          };
+
           // Helper function to convert Excel date - PRIORITIZE serial number for accuracy
           const convertExcelDate = (rawValue: any, formattedValue: any): string => {
             // PRIORITY 1: If raw value is a number (Excel serial date) - MOST ACCURATE
             if (typeof rawValue === 'number' && rawValue > 0 && rawValue < 1000000) {
-              // Convert Excel serial number directly without timezone issues
-              // Excel epoch: January 1, 1900 = serial 1
-              // But Excel incorrectly treats 1900 as leap year, so adjust
-              const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Dec 30, 1899 UTC
-              let date = new Date(excelEpoch.getTime() + rawValue * 24 * 60 * 60 * 1000);
-              
-              // Adjust for Excel's leap year bug (1900 is not a leap year)
-              if (rawValue >= 60) {
-                date.setTime(date.getTime() - 24 * 60 * 60 * 1000);
-              }
-              
-              // Use UTC methods to avoid timezone conversion
-              const year = date.getUTCFullYear();
-              const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-              const day = String(date.getUTCDate()).padStart(2, '0');
-              return `${year}-${month}-${day}`;
+              // Convert Excel serial number directly WITHOUT using Date() to avoid timezone issues
+              return excelSerialToDate(rawValue);
             }
             
             // PRIORITY 2: Use formatted value if available, but normalize it
