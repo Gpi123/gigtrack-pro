@@ -25,67 +25,74 @@ export const importService = {
           const jsonDataRaw = XLSX.utils.sheet_to_json(firstSheet, { raw: true, defval: '' }) as any[];
           const jsonDataFormatted = XLSX.utils.sheet_to_json(firstSheet, { raw: false, defval: '' }) as any[];
           
-          // Helper function to convert Excel date - ALWAYS prioritize formatted string
-          const convertExcelDate = (rawValue: any, formattedValue: any): string => {
-            // PRIORITY 1: ALWAYS use formatted value if available (Excel's display format)
-            if (formattedValue !== undefined && formattedValue !== null && formattedValue !== '') {
-              const formattedStr = String(formattedValue).trim();
-              
-              // If it's in DD/MM/YYYY format, return as-is (most common case)
-              if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(formattedStr)) {
-                return formattedStr;
-              }
-              
-              // If it's in YYYY-MM-DD format, return as-is
-              if (/^\d{4}-\d{2}-\d{2}$/.test(formattedStr)) {
-                return formattedStr;
-              }
-              
-              // Try to parse other formats
-              return formattedStr;
+          // Helper function to normalize date string formats
+          const normalizeDateString = (dateStr: string): string => {
+            // Handle D/M/YY or DD/MM/YY format (2-digit year)
+            const matchYY = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+            if (matchYY) {
+              const [, day, month, year] = matchYY;
+              // Convert 2-digit year to 4-digit (assume 2000s for years < 50, 1900s for >= 50)
+              const fullYear = parseInt(year, 10) < 50 ? `20${year}` : `19${year}`;
+              return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${fullYear}`;
             }
             
-            // PRIORITY 2: If raw value is a number (Excel serial date)
+            // Handle D/M/YYYY or DD/MM/YYYY format (already 4-digit year)
+            const matchYYYY = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (matchYYYY) {
+              const [, day, month, year] = matchYYYY;
+              return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+            }
+            
+            return dateStr;
+          };
+
+          // Helper function to convert Excel date - PRIORITIZE serial number for accuracy
+          const convertExcelDate = (rawValue: any, formattedValue: any): string => {
+            // PRIORITY 1: If raw value is a number (Excel serial date) - MOST ACCURATE
             if (typeof rawValue === 'number' && rawValue > 0 && rawValue < 1000000) {
               // Convert Excel serial number directly without timezone issues
               // Excel epoch: January 1, 1900 = serial 1
               // But Excel incorrectly treats 1900 as leap year, so adjust
-              const excelEpochDays = 25569; // Days between 1900-01-01 and 1970-01-01 (accounting for Excel bug)
-              const daysSince1900 = rawValue - 1; // Excel serial starts at 1, not 0
-              const totalDays = excelEpochDays + daysSince1900;
+              const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Dec 30, 1899 UTC
+              let date = new Date(excelEpoch.getTime() + rawValue * 24 * 60 * 60 * 1000);
               
               // Adjust for Excel's leap year bug (1900 is not a leap year)
               if (rawValue >= 60) {
-                // Subtract 1 day for dates after Feb 28, 1900
-                const adjustedDays = totalDays - 1;
-                const date = new Date(adjustedDays * 24 * 60 * 60 * 1000);
-                const year = date.getUTCFullYear();
-                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-                const day = String(date.getUTCDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-              } else {
-                const date = new Date(totalDays * 24 * 60 * 60 * 1000);
-                const year = date.getUTCFullYear();
-                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-                const day = String(date.getUTCDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
+                date.setTime(date.getTime() - 24 * 60 * 60 * 1000);
               }
+              
+              // Use UTC methods to avoid timezone conversion
+              const year = date.getUTCFullYear();
+              const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+              const day = String(date.getUTCDate()).padStart(2, '0');
+              return `${year}-${month}-${day}`;
             }
             
-            // PRIORITY 3: Use raw value as string
+            // PRIORITY 2: Use formatted value if available, but normalize it
+            if (formattedValue !== undefined && formattedValue !== null && formattedValue !== '') {
+              const formattedStr = String(formattedValue).trim();
+              
+              // Normalize date string formats (D/M/YY -> DD/MM/YYYY, etc)
+              const normalized = normalizeDateString(formattedStr);
+              
+              // If it's now in DD/MM/YYYY format, return as-is
+              if (/^\d{2}\/\d{2}\/\d{4}$/.test(normalized)) {
+                return normalized;
+              }
+              
+              // If it's in YYYY-MM-DD format, return as-is
+              if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+                return normalized;
+              }
+              
+              return normalized;
+            }
+            
+            // PRIORITY 3: Use raw value as string and normalize
             const dateString = String(rawValue).trim();
+            const normalized = normalizeDateString(dateString);
             
-            // If it's already in DD/MM/YYYY format, return as-is
-            if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) {
-              return dateString;
-            }
-            
-            // If it's in YYYY-MM-DD format, return as-is
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-              return dateString;
-            }
-            
-            return dateString;
+            return normalized;
           };
           
           // Normalize column names (case insensitive, remove accents)
@@ -173,7 +180,7 @@ export const importService = {
       if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         finalDate = dateStr;
       }
-      // Parse DD/MM/YYYY format (Brazilian format - MOST COMMON)
+      // Parse DD/MM/YYYY or D/M/YYYY format (Brazilian format - MOST COMMON)
       else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
         const parts = dateStr.split('/');
         const day = parts[0].padStart(2, '0');   // Day comes first
