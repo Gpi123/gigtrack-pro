@@ -115,6 +115,30 @@ export const bandService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    // Verificar se o usuário tem permissão (owner ou member da banda)
+    const { data: band, error: bandError } = await supabase
+      .from('bands')
+      .select('id, owner_id')
+      .eq('id', bandId)
+      .single();
+
+    if (bandError) throw new Error(`Banda não encontrada: ${bandError.message}`);
+    
+    // Verificar se é owner
+    const isOwner = band.owner_id === user.id;
+    
+    // Verificar se é member
+    const { data: member } = await supabase
+      .from('band_members')
+      .select('role')
+      .eq('band_id', bandId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!isOwner && !member) {
+      throw new Error('Você não tem permissão para convidar membros desta banda');
+    }
+
     // Gerar token único
     const token = btoa(`${bandId}:${email}:${Date.now()}`).replace(/[^a-zA-Z0-9]/g, '');
     
@@ -134,7 +158,10 @@ export const bandService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao criar convite:', error);
+      throw new Error(`Erro ao criar convite: ${error.message}. Verifique se você tem permissão.`);
+    }
     return data;
   },
 
