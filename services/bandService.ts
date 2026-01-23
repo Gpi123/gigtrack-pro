@@ -256,12 +256,21 @@ export const bandService = {
   // Verificar convites pendentes do usuário atual
   checkPendingInvites: async (): Promise<BandInvite[]> => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    if (!user || !user.email) return [];
+
+    // Buscar perfil para garantir que temos o email
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || !profile.email) return [];
 
     const { data, error } = await supabase
       .from('band_invites')
       .select('*, band:bands!band_invites_band_id_fkey(id, name)')
-      .eq('email', user.email?.toLowerCase() || '')
+      .eq('email', profile.email.toLowerCase())
       .eq('status', 'pending')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false });
