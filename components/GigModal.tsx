@@ -158,7 +158,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
             <textarea 
               rows={3}
               placeholder="Observações, lista de repertório, horário de chegada..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors resize-none text-sm"
+              className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors resize-none text-sm"
               value={formData.notes}
               onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
             />

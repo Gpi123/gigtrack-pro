@@ -64,7 +64,9 @@ const PeriodModal: React.FC<PeriodModalProps> = ({
                   colorScheme: 'dark',
                   WebkitAppearance: 'none',
                   appearance: 'none',
-                  fontSize: '16px' // Prevents zoom on iOS
+                  fontSize: '16px', // Prevents zoom on iOS
+                  minHeight: '48px', // Fixed height to prevent size changes
+                  height: '48px' // Fixed height
                 }}
               />
             </div>
@@ -83,7 +85,9 @@ const PeriodModal: React.FC<PeriodModalProps> = ({
                   colorScheme: 'dark',
                   WebkitAppearance: 'none',
                   appearance: 'none',
-                  fontSize: '16px' // Prevents zoom on iOS
+                  fontSize: '16px', // Prevents zoom on iOS
+                  minHeight: '48px', // Fixed height to prevent size changes
+                  height: '48px' // Fixed height
                 }}
               />
             </div>
