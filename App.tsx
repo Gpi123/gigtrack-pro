@@ -275,7 +275,7 @@ const App: React.FC = () => {
     }
   };
 
-  const isLoadingBulkOperation = isImporting || (isSyncing && (selectedGigIds.size > 0 || importPreviewGigs.length > 0));
+  const isLoadingBulkOperation = isImporting || (isSyncing && selectedGigIds.size > 0);
 
   const getLoadingMessage = () => {
     if (isImporting) {
@@ -408,10 +408,12 @@ const App: React.FC = () => {
       // Show preview
       setImportPreviewGigs(newGigs);
       setImportPreviewOpen(true);
+      setIsImporting(false); // Stop loading when showing preview
     } catch (error: any) {
       console.error('Erro ao importar:', error);
       toast.error(`Erro ao importar: ${error.message || 'Erro desconhecido'}`);
       setIsImporting(false);
+      setImportPreviewGigs([]); // Clear on error
     } finally {
       // Reset input
       if (importInputRef.current) {
@@ -421,21 +423,29 @@ const App: React.FC = () => {
   };
 
   const confirmImport = async () => {
+    const gigsToImport = [...importPreviewGigs]; // Copy array before clearing
     try {
       setIsImporting(true);
-      // Create gigs in Supabase
-      for (const gig of importPreviewGigs) {
-        await gigService.createGig(gig);
+      setImportPreviewOpen(false);
+      
+      // Create gigs in Supabase in batches to avoid timeout
+      const batchSize = 10;
+      for (let i = 0; i < gigsToImport.length; i += batchSize) {
+        const batch = gigsToImport.slice(i, i + batchSize);
+        await Promise.all(batch.map(gig => gigService.createGig(gig)));
       }
 
+      // Clear preview before reloading
+      setImportPreviewGigs([]);
+      
       // Reload gigs
       await loadGigs();
-      toast.success(`${importPreviewGigs.length} eventos importados com sucesso!`);
-      setImportPreviewOpen(false);
-      setImportPreviewGigs([]);
+      toast.success(`${gigsToImport.length} eventos importados com sucesso!`);
     } catch (error: any) {
       console.error('Erro ao importar:', error);
       toast.error(`Erro ao importar: ${error.message || 'Erro desconhecido'}`);
+      // Clear preview even on error
+      setImportPreviewGigs([]);
     } finally {
       setIsImporting(false);
     }
@@ -854,6 +864,7 @@ const App: React.FC = () => {
           onClose={() => {
             setImportPreviewOpen(false);
             setImportPreviewGigs([]);
+            setIsImporting(false); // Ensure loading is off when closing
           }}
           onConfirm={confirmImport}
           title="Preview de Importação"
