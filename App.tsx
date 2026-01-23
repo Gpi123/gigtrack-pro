@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, LayoutDashboard, Calendar, DollarSign, BrainCircuit, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload, Trash2 } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar, DollarSign, BrainCircuit, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload, Trash2, Search, Filter } from 'lucide-react';
 import { Gig, GigStatus, FinancialStats } from './types';
 import { getMusicianInsights } from './services/geminiService';
 import { gigService } from './services/gigService';
@@ -14,6 +14,8 @@ import SummaryCards from './components/SummaryCards';
 import GigList from './components/GigList';
 import CalendarWithFilters from './components/CalendarWithFilters';
 import SideMenu from './components/SideMenu';
+import EmptyState from './components/EmptyState';
+import { ToastContainer, useToast } from './components/Toast';
 
 const App: React.FC = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
@@ -39,6 +41,13 @@ const App: React.FC = () => {
   const backupInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteMultipleConfirmOpen, setDeleteMultipleConfirmOpen] = useState(false);
+  const [importPreviewOpen, setImportPreviewOpen] = useState(false);
+  const [importPreviewGigs, setImportPreviewGigs] = useState<Gig[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid'>('all');
+  const toast = useToast();
 
   // Carregar dados do Supabase quando usuário estiver autenticado
   useEffect(() => {
@@ -94,6 +103,49 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Atalhos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + N: Novo show
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        if (!isModalOpen && user) {
+          setEditingGig(null);
+          setPreSelectedDate(null);
+          setIsModalOpen(true);
+        }
+      }
+      
+      // ESC: Fechar modais
+      if (e.key === 'Escape') {
+        if (isModalOpen) {
+          setIsModalOpen(false);
+          setEditingGig(null);
+          setPreSelectedDate(null);
+        }
+        if (isMenuOpen) {
+          setIsMenuOpen(false);
+        }
+        if (isClearConfirmOpen) {
+          setIsClearConfirmOpen(false);
+        }
+        if (deleteConfirmId) {
+          setDeleteConfirmId(null);
+        }
+        if (deleteMultipleConfirmOpen) {
+          setDeleteMultipleConfirmOpen(false);
+        }
+        if (importPreviewOpen) {
+          setImportPreviewOpen(false);
+          setImportPreviewGigs([]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen, isMenuOpen, isClearConfirmOpen, deleteConfirmId, deleteMultipleConfirmOpen, importPreviewOpen, user]);
+
   const loadGigs = async () => {
     try {
       setLoading(true);
@@ -124,15 +176,18 @@ const App: React.FC = () => {
       setIsSyncing(true);
       if (gig.id) {
         await gigService.updateGig(gig.id, gig);
+        toast.success('Show atualizado com sucesso!');
       } else {
         await gigService.createGig(gig);
+        toast.success('Show criado com sucesso!');
       }
       setIsModalOpen(false);
       setEditingGig(null);
+      setPreSelectedDate(null);
       await loadGigs();
     } catch (error: any) {
       console.error('Erro ao salvar show:', error);
-      alert(error.message || 'Erro ao salvar show');
+      toast.error(error.message || 'Erro ao salvar show');
     } finally {
       setIsSyncing(false);
     }
@@ -144,49 +199,78 @@ const App: React.FC = () => {
       return;
     }
 
-    if (confirm('Deseja excluir este show?')) {
-      try {
-        setIsSyncing(true);
-        await gigService.deleteGig(id);
-        await loadGigs();
-      } catch (error: any) {
-        console.error('Erro ao excluir show:', error);
-        alert(error.message || 'Erro ao excluir show');
-      } finally {
-        setIsSyncing(false);
-      }
+    const gig = gigs.find(g => g.id === id);
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteGig = async () => {
+    if (!deleteConfirmId) return;
+    
+    const gig = gigs.find(g => g.id === deleteConfirmId);
+    const gigTitle = gig?.title || 'este show';
+    
+    try {
+      setIsSyncing(true);
+      await gigService.deleteGig(deleteConfirmId);
+      toast.success(`"${gigTitle}" excluído com sucesso!`, 3000, () => {
+        // Undo function - recriar o show
+        if (gig) {
+          gigService.createGig(gig).then(() => loadGigs());
+        }
+      });
+      await loadGigs();
+    } catch (error: any) {
+      console.error('Erro ao excluir show:', error);
+      toast.error(error.message || 'Erro ao excluir show');
+    } finally {
+      setIsSyncing(false);
+      setDeleteConfirmId(null);
     }
   };
 
   const handleClearAllGigs = async () => {
+    setIsClearConfirmOpen(true);
+  };
+
+  const confirmClearAllGigs = async () => {
     try {
+      setIsSyncing(true);
       await gigService.deleteAllGigs();
       await loadGigs();
-      alert('✅ Agenda limpa com sucesso!');
+      toast.success('Agenda limpa com sucesso!');
     } catch (error: any) {
       console.error('Erro ao limpar agenda:', error);
-      alert(error.message || 'Erro ao limpar agenda');
+      toast.error(error.message || 'Erro ao limpar agenda');
+    } finally {
+      setIsSyncing(false);
+      setIsClearConfirmOpen(false);
     }
   };
 
-  const handleDeleteMultiple = async () => {
+  const handleDeleteMultiple = () => {
     if (selectedGigIds.size === 0) return;
+    setDeleteMultipleConfirmOpen(true);
+  };
+
+  const confirmDeleteMultiple = async () => {
+    const idsToDelete = Array.from(selectedGigIds) as string[];
+    const deletedGigs = gigs.filter(g => idsToDelete.includes(g.id));
     
     try {
       setIsSyncing(true);
-      const idsToDelete = Array.from(selectedGigIds) as string[];
       for (const id of idsToDelete) {
         await gigService.deleteGig(id);
       }
       await loadGigs();
       setSelectedGigIds(new Set());
       setIsMultiSelectMode(false);
-      alert(`✅ ${idsToDelete.length} evento(s) excluído(s) com sucesso!`);
+      toast.success(`${idsToDelete.length} evento(s) excluído(s) com sucesso!`);
     } catch (error: any) {
       console.error('Erro ao excluir eventos:', error);
-      alert(error.message || 'Erro ao excluir eventos');
+      toast.error(error.message || 'Erro ao excluir eventos');
     } finally {
       setIsSyncing(false);
+      setDeleteMultipleConfirmOpen(false);
     }
   };
 
@@ -200,12 +284,14 @@ const App: React.FC = () => {
       setIsSyncing(true);
       const gig = gigs.find(g => g.id === id);
       if (gig) {
+        const newStatus = gig.status === GigStatus.PAID ? GigStatus.PENDING : GigStatus.PAID;
         await gigService.toggleGigStatus(id, gig.status);
         await loadGigs();
+        toast.success(`Status alterado para ${newStatus === GigStatus.PAID ? 'Pago' : 'Pendente'}`);
       }
     } catch (error: any) {
       console.error('Erro ao alterar status:', error);
-      alert(error.message || 'Erro ao alterar status');
+      toast.error(error.message || 'Erro ao alterar status');
     } finally {
       setIsSyncing(false);
     }
@@ -224,13 +310,34 @@ const App: React.FC = () => {
 
   const filteredGigs = useMemo(() => {
     let result = [...gigs].sort((a, b) => a.date.localeCompare(b.date));
+    
+    // Filtro de período ou data selecionada
     if (isPeriodActive) {
       result = result.filter(gig => gig.date >= startDate && gig.date <= endDate);
     } else if (selectedCalendarDate) {
       result = result.filter(gig => gig.date === selectedCalendarDate);
     }
+    
+    // Filtro de status
+    if (filterStatus !== 'all') {
+      result = result.filter(gig => 
+        filterStatus === 'pending' ? gig.status === GigStatus.PENDING : gig.status === GigStatus.PAID
+      );
+    }
+    
+    // Busca por texto
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(gig => 
+        gig.title?.toLowerCase().includes(query) ||
+        gig.band_name?.toLowerCase().includes(query) ||
+        gig.location?.toLowerCase().includes(query) ||
+        gig.notes?.toLowerCase().includes(query)
+      );
+    }
+    
     return result;
-  }, [gigs, selectedCalendarDate, startDate, endDate, isPeriodActive]);
+  }, [gigs, selectedCalendarDate, startDate, endDate, isPeriodActive, filterStatus, searchQuery]);
 
   const stats = useMemo<FinancialStats>(() => {
     return filteredGigs.reduce((acc, gig) => {
@@ -277,7 +384,7 @@ const App: React.FC = () => {
       const rows = await importService.parseFile(file);
       
       if (rows.length === 0) {
-        alert('Nenhum dado encontrado no arquivo.');
+        toast.warning('Nenhum dado encontrado no arquivo.');
         setIsImporting(false);
         return;
       }
@@ -285,30 +392,39 @@ const App: React.FC = () => {
       // Convert to gigs
       const newGigs = importService.convertToGigs(rows, user.id);
       
-      // Confirm import
-      const confirmed = confirm(`Encontrados ${newGigs.length} eventos no arquivo. Deseja importar todos?`);
-      if (!confirmed) {
-        setIsImporting(false);
-        return;
+      // Show preview
+      setImportPreviewGigs(newGigs);
+      setImportPreviewOpen(true);
+    } catch (error: any) {
+      console.error('Erro ao importar:', error);
+      toast.error(`Erro ao importar: ${error.message || 'Erro desconhecido'}`);
+      setIsImporting(false);
+    } finally {
+      // Reset input
+      if (importInputRef.current) {
+        importInputRef.current.value = '';
       }
+    }
+  };
 
+  const confirmImport = async () => {
+    try {
+      setIsImporting(true);
       // Create gigs in Supabase
-      for (const gig of newGigs) {
+      for (const gig of importPreviewGigs) {
         await gigService.createGig(gig);
       }
 
       // Reload gigs
       await loadGigs();
-      alert(`✅ ${newGigs.length} eventos importados com sucesso!`);
+      toast.success(`${importPreviewGigs.length} eventos importados com sucesso!`);
+      setImportPreviewOpen(false);
+      setImportPreviewGigs([]);
     } catch (error: any) {
       console.error('Erro ao importar:', error);
-      alert(`Erro ao importar: ${error.message || 'Erro desconhecido'}`);
+      toast.error(`Erro ao importar: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setIsImporting(false);
-      // Reset input
-      if (importInputRef.current) {
-        importInputRef.current.value = '';
-      }
     }
   };
 
@@ -496,11 +612,63 @@ const App: React.FC = () => {
             </div>
 
             <div className="lg:col-span-8">
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                 <h2 className="text-2xl font-bold flex items-center gap-3 text-white">
                   <LayoutDashboard size={24} className="text-white" />
                   {isPeriodActive ? 'Filtro de Período' : (selectedCalendarDate ? 'Data Selecionada' : 'Minha Agenda')}
                 </h2>
+                
+                {/* Busca e Filtros */}
+                {!isPeriodActive && !selectedCalendarDate && (
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    {/* Busca */}
+                    <div className="relative flex-1 sm:flex-initial">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={18} />
+                      <input
+                        type="text"
+                        placeholder="Buscar shows..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 bg-[#24272D] border border-[#31333B] rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-[#3057F2] transition-colors"
+                      />
+                    </div>
+                    
+                    {/* Filtro de Status */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setFilterStatus('all')}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                          filterStatus === 'all' 
+                            ? 'bg-[#3057F2] text-white' 
+                            : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
+                        }`}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('pending')}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                          filterStatus === 'pending' 
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                            : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
+                        }`}
+                      >
+                        Pendentes
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('paid')}
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                          filterStatus === 'paid' 
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                            : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
+                        }`}
+                      >
+                        Pagos
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
                 {filteredGigs.length > 0 && !isPeriodActive && !selectedCalendarDate && (
                   <button
                     onClick={() => {
@@ -533,11 +701,7 @@ const App: React.FC = () => {
                 )}
                 {isMultiSelectMode && selectedGigIds.size > 0 && (
                   <button
-                    onClick={() => {
-                      if (confirm(`Deseja excluir ${selectedGigIds.size} evento(s)?`)) {
-                        handleDeleteMultiple();
-                      }
-                    }}
+                    onClick={handleDeleteMultiple}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-all"
                   >
                     <Trash2 size={16} />
@@ -547,11 +711,14 @@ const App: React.FC = () => {
               </div>
 
               {filteredGigs.length === 0 ? (
-                <div className="text-center py-32 bg-[#24272D]/20 border-2 border-dashed border-[#31333B]/50 rounded-3xl">
-                  <Calendar className="text-white w-12 h-12 mx-auto mb-4" />
-                  <h3 className="text-white text-lg font-medium">Nenhum evento registrado</h3>
-                  <button onClick={() => { setSelectedCalendarDate(null); setStartDate(''); setEndDate(''); }} className="text-[#3057F2] text-sm font-bold mt-4 hover:underline">Ver tudo</button>
-                </div>
+                <EmptyState 
+                  onAddClick={() => {
+                    setEditingGig(null);
+                    setPreSelectedDate(null);
+                    setIsModalOpen(true);
+                  }}
+                  message={searchQuery || filterStatus !== 'all' || isPeriodActive || selectedCalendarDate ? 'Nenhum show encontrado com os filtros aplicados.' : undefined}
+                />
               ) : (
                 <GigList 
                   gigs={filteredGigs} 
@@ -601,16 +768,8 @@ const App: React.FC = () => {
             handleSaveGig(gig);
             setPreSelectedDate(null);
           }} 
-          initialData={editingGig || (preSelectedDate ? {
-            id: '',
-            title: '',
-            date: preSelectedDate,
-            location: '',
-            value: 0,
-            status: GigStatus.PENDING,
-            band_name: '',
-            notes: ''
-          } : null)}
+          initialData={editingGig || (preSelectedDate ? { date: preSelectedDate } : null)}
+          isLoading={isSyncing}
         />
       )}
       {isAuthModalOpen && (
@@ -622,16 +781,65 @@ const App: React.FC = () => {
           onAuthChange={setUser}
         />
       )}
+      {/* Toast Container */}
+      <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
+
+      {/* Modal de Confirmação - Limpar Agenda */}
       {isClearConfirmOpen && (
         <ConfirmModal
           isOpen={isClearConfirmOpen}
           onClose={() => setIsClearConfirmOpen(false)}
-          onConfirm={handleClearAllGigs}
+          onConfirm={confirmClearAllGigs}
           title="Limpar Agenda"
-          message="Tem certeza que deseja excluir TODOS os eventos da sua agenda? Esta ação não pode ser desfeita."
+          message="Tem certeza que deseja excluir TODOS os shows da sua agenda? Esta ação não pode ser desfeita."
           confirmText="Sim, Limpar Tudo"
           cancelText="Cancelar"
           isDestructive={true}
+        />
+      )}
+
+      {/* Modal de Confirmação - Excluir Show */}
+      {deleteConfirmId && (
+        <ConfirmModal
+          isOpen={!!deleteConfirmId}
+          onClose={() => setDeleteConfirmId(null)}
+          onConfirm={confirmDeleteGig}
+          title="Excluir Show"
+          message={`Tem certeza que deseja excluir "${gigs.find(g => g.id === deleteConfirmId)?.title || 'este show'}"?`}
+          confirmText="Excluir"
+          cancelText="Cancelar"
+          isDestructive={true}
+        />
+      )}
+
+      {/* Modal de Confirmação - Excluir Múltiplos */}
+      {deleteMultipleConfirmOpen && (
+        <ConfirmModal
+          isOpen={deleteMultipleConfirmOpen}
+          onClose={() => setDeleteMultipleConfirmOpen(false)}
+          onConfirm={confirmDeleteMultiple}
+          title="Excluir Shows Selecionados"
+          message={`Tem certeza que deseja excluir ${selectedGigIds.size} show(s) selecionado(s)? Esta ação não pode ser desfeita.`}
+          confirmText={`Excluir ${selectedGigIds.size}`}
+          cancelText="Cancelar"
+          isDestructive={true}
+        />
+      )}
+
+      {/* Modal de Preview de Importação */}
+      {importPreviewOpen && importPreviewGigs.length > 0 && (
+        <ConfirmModal
+          isOpen={importPreviewOpen}
+          onClose={() => {
+            setImportPreviewOpen(false);
+            setImportPreviewGigs([]);
+          }}
+          onConfirm={confirmImport}
+          title="Preview de Importação"
+          message={`Encontrados ${importPreviewGigs.length} evento(s) no arquivo. Deseja importar todos?`}
+          confirmText={`Importar ${importPreviewGigs.length}`}
+          cancelText="Cancelar"
+          isDestructive={false}
         />
       )}
     </div>

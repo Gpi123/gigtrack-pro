@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, MapPin, Music, FileText } from 'lucide-react';
+import { X, Calendar, DollarSign, MapPin, Music, FileText, Loader2 } from 'lucide-react';
 import { Gig, GigStatus } from '../types';
 
 interface GigModalProps {
@@ -8,9 +8,10 @@ interface GigModalProps {
   onClose: () => void;
   onSubmit: (gig: any) => void;
   initialData?: Partial<Gig> | null;
+  isLoading?: boolean;
 }
 
-const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
+const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialData, isLoading = false }) => {
   const [formData, setFormData] = useState({
     title: '',
     date: new Date().toISOString().split('T')[0],
@@ -67,7 +68,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+        <form id="gig-form" onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           <div className="space-y-1">
             <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
               <Music size={12} /> Título do Evento
@@ -182,10 +183,19 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
             Cancelar
           </button>
           <button 
-            onClick={handleSubmit}
-            className="flex-[2] px-4 py-3 rounded-xl bg-[#3057F2] text-white font-bold hover:bg-[#2545D9] shadow-lg shadow-[#3057F2]/20 transition-all active:scale-95"
+            type="submit"
+            form="gig-form"
+            disabled={isLoading}
+            className="flex-[2] px-4 py-3 rounded-xl bg-[#3057F2] text-white font-bold hover:bg-[#2545D9] shadow-lg shadow-[#3057F2]/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {initialData ? 'Salvar Alterações' : 'Confirmar Evento'}
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Salvando...</span>
+              </>
+            ) : (
+              initialData ? 'Salvar Alterações' : 'Confirmar Evento'
+            )}
           </button>
         </div>
       </div>
