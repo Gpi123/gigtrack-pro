@@ -31,7 +31,7 @@ export const importService = {
             if (typeof rawValue === 'number' && rawValue > 0 && rawValue < 1000000) {
               // Excel epoch starts on January 1, 1900
               // But Excel incorrectly treats 1900 as a leap year, so we need to adjust
-              const excelEpoch = new Date(1899, 11, 30); // Dec 30, 1899
+              const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Dec 30, 1899 UTC
               let date = new Date(excelEpoch.getTime() + rawValue * 24 * 60 * 60 * 1000);
               
               // Adjust for Excel's leap year bug (1900 is not a leap year)
@@ -39,17 +39,19 @@ export const importService = {
                 date.setTime(date.getTime() - 24 * 60 * 60 * 1000);
               }
               
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const day = String(date.getDate()).padStart(2, '0');
+              // Use UTC methods to avoid timezone conversion
+              const year = date.getUTCFullYear();
+              const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+              const day = String(date.getUTCDate()).padStart(2, '0');
               return `${year}-${month}-${day}`;
             }
             
             // If it's already a Date object
             if (rawValue instanceof Date) {
-              const year = rawValue.getFullYear();
-              const month = String(rawValue.getMonth() + 1).padStart(2, '0');
-              const day = String(rawValue.getDate()).padStart(2, '0');
+              // Use UTC methods to avoid timezone conversion
+              const year = rawValue.getUTCFullYear();
+              const month = String(rawValue.getUTCMonth() + 1).padStart(2, '0');
+              const day = String(rawValue.getUTCDate()).padStart(2, '0');
               return `${year}-${month}-${day}`;
             }
             
@@ -160,14 +162,42 @@ export const importService = {
         dateStr = row.data;
       }
       
-      // Validate date
-      const dateObj = new Date(dateStr);
-      if (!dateStr || isNaN(dateObj.getTime()) || dateStr.length !== 10) {
-        throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY ou YYYY-MM-DD`);
+      // Validate date - parse without timezone conversion
+      let finalDate = '';
+      
+      // If already in YYYY-MM-DD format, use it directly
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        finalDate = dateStr;
+      } else {
+        // Parse date string manually to avoid timezone issues
+        const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (dateMatch) {
+          const [, year, month, day] = dateMatch;
+          // Validate date components
+          const yearNum = parseInt(year, 10);
+          const monthNum = parseInt(month, 10);
+          const dayNum = parseInt(day, 10);
+          
+          // Create date in UTC to avoid timezone conversion
+          const dateObj = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
+          
+          // Verify the date is valid
+          if (dateObj.getUTCFullYear() !== yearNum || 
+              dateObj.getUTCMonth() !== monthNum - 1 || 
+              dateObj.getUTCDate() !== dayNum) {
+            throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY ou YYYY-MM-DD`);
+          }
+          
+          finalDate = `${year}-${month}-${day}`;
+        } else {
+          throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY ou YYYY-MM-DD`);
+        }
       }
       
-      // Ensure date is in YYYY-MM-DD format
-      const finalDate = dateObj.toISOString().split('T')[0];
+      // Final validation
+      if (!finalDate || finalDate.length !== 10) {
+        throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY ou YYYY-MM-DD`);
+      }
       
       // Parse value
       let value = 0;
