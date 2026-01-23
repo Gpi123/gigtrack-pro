@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Mail, X, Trash2, Loader2, Check, UserPlus } from 'lucide-react';
+import { Users, Plus, Mail, X, Trash2, Loader2, Check, UserPlus, Copy, CheckCircle } from 'lucide-react';
 import { bandService } from '../services/bandService';
 import { Band, BandMember, BandInvite } from '../types';
 import { useToast } from './Toast';
@@ -20,6 +20,8 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
   const [newBandDescription, setNewBandDescription] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [selectedBand, setSelectedBand] = useState<Band | null>(null);
+  const [createdInvite, setCreatedInvite] = useState<{ token: string; email: string; bandName: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -92,16 +94,34 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
 
     try {
       setLoading(true);
-      await bandService.inviteUser(selectedBand.id, inviteEmail.trim());
+      const invite = await bandService.inviteUser(selectedBand.id, inviteEmail.trim());
       await loadBandDetails(selectedBand.id);
       setShowInviteModal(false);
+      
+      // Mostrar modal com link do convite
+      const inviteUrl = `${window.location.origin}/accept-invite?token=${invite.token}`;
+      setCreatedInvite({
+        token: invite.token,
+        email: inviteEmail.trim(),
+        bandName: selectedBand.name
+      });
+      
       setInviteEmail('');
-      toast.success('Convite enviado com sucesso!');
+      toast.success('Convite criado! Compartilhe o link abaixo.');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao enviar convite');
     } finally {
       setLoading(false);
     }
+  };
+
+  const copyInviteLink = () => {
+    if (!createdInvite) return;
+    const inviteUrl = `${window.location.origin}/accept-invite?token=${createdInvite.token}`;
+    navigator.clipboard.writeText(inviteUrl);
+    setCopied(true);
+    toast.success('Link copiado!');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleRemoveMember = async (userId: string) => {
@@ -342,9 +362,52 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
                   className="flex-1 px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                  Enviar Convite
+                  Criar Convite
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal com Link do Convite */}
+      {createdInvite && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setCreatedInvite(null)} />
+          <div className="relative bg-[#24272D] border border-[#31333B] rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-white mb-2">Convite Criado!</h3>
+            <p className="text-sm text-white/70 mb-4">
+              Compartilhe este link com <strong>{createdInvite.email}</strong> para a banda <strong>{createdInvite.bandName}</strong>
+            </p>
+            <div className="bg-[#1E1F25] border border-[#31333B] rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-bold text-white/70 uppercase">Link do Convite</span>
+                <button
+                  onClick={copyInviteLink}
+                  className="ml-auto p-1.5 hover:bg-[#24272D] rounded-lg transition-colors"
+                  title="Copiar link"
+                >
+                  {copied ? (
+                    <CheckCircle size={16} className="text-green-500" />
+                  ) : (
+                    <Copy size={16} className="text-white" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-white/90 break-all font-mono">
+                {`${window.location.origin}/accept-invite?token=${createdInvite.token}`}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs text-white/60">
+                💡 <strong>Dica:</strong> Envie este link por WhatsApp, email ou qualquer outro meio. O usuário precisa fazer login com o email <strong>{createdInvite.email}</strong> para aceitar.
+              </p>
+              <button
+                onClick={() => setCreatedInvite(null)}
+                className="w-full px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>
