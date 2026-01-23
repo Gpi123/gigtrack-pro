@@ -49,7 +49,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
       {cardData.map((card, index) => (
         <div 
           key={index}
-          className={`${card.bgColor} border ${card.borderColor} rounded-lg lg:rounded-2xl p-2.5 lg:p-4 flex flex-col items-start justify-center lg:flex-row lg:items-center transition-all hover:scale-[1.02] min-h-[75px] lg:min-h-0`}
+          className={`${card.bgColor} border ${card.borderColor} rounded-xl lg:rounded-2xl p-2.5 lg:p-4 flex flex-col items-start justify-center lg:flex-row lg:items-center transition-all hover:scale-[1.02] min-h-[75px] lg:min-h-0`}
         >
           {/* Ícones apenas no desktop */}
           <div className={`hidden lg:flex flex-shrink-0 p-3 ${card.iconBg} rounded-xl shadow-inner mr-4`}>
