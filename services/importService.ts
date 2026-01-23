@@ -176,21 +176,23 @@ export const importService = {
           const monthNum = parseInt(month, 10);
           const yearNum = parseInt(year, 10);
           
-          // Basic validation
+          // Basic validation without using Date() to avoid timezone issues
           if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum) || 
               dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1900) {
             throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY`);
           }
           
-          // Use Date.UTC only for validation, but keep the original string format
-          const testDate = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
-          if (testDate.getUTCFullYear() !== yearNum || 
-              testDate.getUTCMonth() !== monthNum - 1 || 
-              testDate.getUTCDate() !== dayNum) {
-            throw new Error(`Data inválida na linha ${index + 2}: "${row.data}"`);
+          // Validate day based on month (simple validation without Date)
+          const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+          // Check for leap year
+          const isLeapYear = (yearNum % 4 === 0 && yearNum % 100 !== 0) || (yearNum % 400 === 0);
+          const maxDay = monthNum === 2 && isLeapYear ? 29 : daysInMonth[monthNum - 1];
+          
+          if (dayNum > maxDay) {
+            throw new Error(`Data inválida na linha ${index + 2}: "${row.data}" (dia ${dayNum} não existe no mês ${monthNum})`);
           }
           
-          // Build YYYY-MM-DD directly from parsed components (no Date conversion)
+          // Build YYYY-MM-DD directly from parsed components (NO Date conversion at all)
           finalDate = `${year}-${month}-${day}`;
         } else {
           throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY`);
@@ -212,10 +214,12 @@ export const importService = {
           throw new Error(`Data inválida na linha ${index + 2}: "${row.data}"`);
         }
         
-        const testDate = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
-        if (testDate.getUTCFullYear() !== yearNum || 
-            testDate.getUTCMonth() !== monthNum - 1 || 
-            testDate.getUTCDate() !== dayNum) {
+        // Validate day based on month (simple validation without Date)
+        const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        const isLeapYear = (yearNum % 4 === 0 && yearNum % 100 !== 0) || (yearNum % 400 === 0);
+        const maxDay = monthNum === 2 && isLeapYear ? 29 : daysInMonth[monthNum - 1];
+        
+        if (dayNum > maxDay) {
           throw new Error(`Data inválida na linha ${index + 2}: "${row.data}"`);
         }
         
@@ -243,10 +247,13 @@ export const importService = {
         }
       }
       
+      // Ensure date is in correct format (YYYY-MM-DD) - no timezone conversion
+      const gigDate = finalDate; // Already validated as YYYY-MM-DD
+      
       return {
         user_id: userId,
         title: row.evento || 'Evento sem título',
-        date: finalDate,
+        date: gigDate, // Send as string directly to Supabase
         location: '',
         value: value,
         status: GigStatus.PENDING,

@@ -22,13 +22,17 @@ export const gigService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    // Ensure date is sent as a string in YYYY-MM-DD format (no timezone conversion)
+    const gigData = {
+      ...gig,
+      date: gig.date, // Keep as string - PostgreSQL DATE type doesn't have timezone
+      user_id: user.id,
+      status: gig.status || GigStatus.PENDING
+    };
+
     const { data, error } = await supabase
       .from('gigs')
-      .insert({
-        ...gig,
-        user_id: user.id,
-        status: gig.status || GigStatus.PENDING
-      })
+      .insert(gigData)
       .select()
       .single();
 
