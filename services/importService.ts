@@ -27,7 +27,22 @@ export const importService = {
           
           // Helper function to convert Excel date serial number to YYYY-MM-DD
           const convertExcelDate = (rawValue: any, formattedValue: any): string => {
-            // If raw value is a number (Excel serial date) - typically between 1 and 1000000
+            // PRIORITY 1: Check formatted value first (usually a string like "23/01/2026")
+            if (formattedValue !== undefined && formattedValue !== null && formattedValue !== '') {
+              const formattedStr = String(formattedValue).trim();
+              
+              // If it's already in DD/MM/YYYY format, return as-is (will be parsed in convertToGigs)
+              if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(formattedStr)) {
+                return formattedStr;
+              }
+              
+              // If it's in YYYY-MM-DD format, return as-is
+              if (/^\d{4}-\d{2}-\d{2}$/.test(formattedStr)) {
+                return formattedStr;
+              }
+            }
+            
+            // PRIORITY 2: If raw value is a number (Excel serial date) - typically between 1 and 1000000
             if (typeof rawValue === 'number' && rawValue > 0 && rawValue < 1000000) {
               // Excel epoch starts on January 1, 1900
               // But Excel incorrectly treats 1900 as a leap year, so we need to adjust
@@ -46,7 +61,7 @@ export const importService = {
               return `${year}-${month}-${day}`;
             }
             
-            // If it's already a Date object
+            // PRIORITY 3: If it's already a Date object
             if (rawValue instanceof Date) {
               // Use UTC methods to avoid timezone conversion
               const year = rawValue.getUTCFullYear();
@@ -55,12 +70,20 @@ export const importService = {
               return `${year}-${month}-${day}`;
             }
             
-            // Use formatted value (string) if available, otherwise use raw
-            const valueToUse = formattedValue !== undefined && formattedValue !== null && formattedValue !== '' 
-              ? formattedValue 
-              : rawValue;
+            // PRIORITY 4: Use raw value as string
+            const dateString = String(rawValue).trim();
             
-            return String(valueToUse).trim();
+            // If it's already in DD/MM/YYYY format, return as-is
+            if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) {
+              return dateString;
+            }
+            
+            // If it's in YYYY-MM-DD format, return as-is
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+              return dateString;
+            }
+            
+            return dateString;
           };
           
           // Normalize column names (case insensitive, remove accents)
@@ -132,21 +155,45 @@ export const importService = {
   // Convert import rows to Gig objects
   convertToGigs: (rows: ImportRow[], userId: string): Omit<Gig, 'id'>[] => {
     return rows.map((row, index) => {
-      // Parse date - try multiple formats
-      let dateStr = '';
+      // Parse date - try multiple formats WITHOUT using Date() to avoid timezone issues
+      let finalDate = '';
       
       // If already in YYYY-MM-DD format (from Excel conversion)
       if (/^\d{4}-\d{2}-\d{2}$/.test(row.data)) {
-        dateStr = row.data;
+        // Use directly without any Date conversion
+        finalDate = row.data;
       }
-      // Try DD/MM/YYYY format
+      // Try DD/MM/YYYY format (Brazilian format)
       else if (row.data.includes('/')) {
         const parts = row.data.split('/');
         if (parts.length === 3) {
           const day = parts[0].padStart(2, '0');
           const month = parts[1].padStart(2, '0');
-          const year = parts[2];
-          dateStr = `${year}-${month}-${day}`;
+          const year = parts[2].trim();
+          
+          // Validate numeric values
+          const dayNum = parseInt(day, 10);
+          const monthNum = parseInt(month, 10);
+          const yearNum = parseInt(year, 10);
+          
+          // Basic validation
+          if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum) || 
+              dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1900) {
+            throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY`);
+          }
+          
+          // Use Date.UTC only for validation, but keep the original string format
+          const testDate = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
+          if (testDate.getUTCFullYear() !== yearNum || 
+              testDate.getUTCMonth() !== monthNum - 1 || 
+              testDate.getUTCDate() !== dayNum) {
+            throw new Error(`Data inválida na linha ${index + 2}: "${row.data}"`);
+          }
+          
+          // Build YYYY-MM-DD directly from parsed components (no Date conversion)
+          finalDate = `${year}-${month}-${day}`;
+        } else {
+          throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY`);
         }
       }
       // Try MM/DD/YYYY format (US format)
@@ -154,48 +201,36 @@ export const importService = {
         const parts = row.data.split('/');
         const month = parts[0].padStart(2, '0');
         const day = parts[1].padStart(2, '0');
-        const year = parts[2];
-        dateStr = `${year}-${month}-${day}`;
+        const year = parts[2].trim();
+        
+        const monthNum = parseInt(month, 10);
+        const dayNum = parseInt(day, 10);
+        const yearNum = parseInt(year, 10);
+        
+        if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum) || 
+            dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1900) {
+          throw new Error(`Data inválida na linha ${index + 2}: "${row.data}"`);
+        }
+        
+        const testDate = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
+        if (testDate.getUTCFullYear() !== yearNum || 
+            testDate.getUTCMonth() !== monthNum - 1 || 
+            testDate.getUTCDate() !== dayNum) {
+          throw new Error(`Data inválida na linha ${index + 2}: "${row.data}"`);
+        }
+        
+        finalDate = `${year}-${month}-${day}`;
       }
       // Try YYYY-MM-DD format
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(row.data.trim())) {
+        finalDate = row.data.trim();
+      }
       else {
-        dateStr = row.data;
+        throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY ou YYYY-MM-DD`);
       }
       
-      // Validate date - parse without timezone conversion
-      let finalDate = '';
-      
-      // If already in YYYY-MM-DD format, use it directly
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        finalDate = dateStr;
-      } else {
-        // Parse date string manually to avoid timezone issues
-        const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (dateMatch) {
-          const [, year, month, day] = dateMatch;
-          // Validate date components
-          const yearNum = parseInt(year, 10);
-          const monthNum = parseInt(month, 10);
-          const dayNum = parseInt(day, 10);
-          
-          // Create date in UTC to avoid timezone conversion
-          const dateObj = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
-          
-          // Verify the date is valid
-          if (dateObj.getUTCFullYear() !== yearNum || 
-              dateObj.getUTCMonth() !== monthNum - 1 || 
-              dateObj.getUTCDate() !== dayNum) {
-            throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY ou YYYY-MM-DD`);
-          }
-          
-          finalDate = `${year}-${month}-${day}`;
-        } else {
-          throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY ou YYYY-MM-DD`);
-        }
-      }
-      
-      // Final validation
-      if (!finalDate || finalDate.length !== 10) {
+      // Final validation - ensure format is correct
+      if (!finalDate || !/^\d{4}-\d{2}-\d{2}$/.test(finalDate)) {
         throw new Error(`Data inválida na linha ${index + 2}: "${row.data}". Formato esperado: DD/MM/YYYY ou YYYY-MM-DD`);
       }
       
