@@ -148,24 +148,57 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isModalOpen, isMenuOpen, isClearConfirmOpen, deleteConfirmId, deleteMultipleConfirmOpen, importPreviewOpen, user]);
 
-  const loadGigs = async () => {
+  // Ref para armazenar a subscription e evitar múltiplas subscrições
+  const subscriptionRef = useRef<any>(null);
+
+  const loadGigs = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const data = await gigService.fetchGigs();
       setGigs(data);
       
-      // Configurar real-time subscription
-      await gigService.subscribeToGigs((updatedGigs) => {
-        setGigs(updatedGigs);
-      });
+      // Configurar real-time subscription apenas uma vez
+      if (!silent && !subscriptionRef.current) {
+        subscriptionRef.current = await gigService.subscribeToGigs((updatedGigs) => {
+          // Atualizar apenas se realmente houver mudanças (evitar loops)
+          setGigs(prevGigs => {
+            const prevIds = new Set(prevGigs.map(g => g.id));
+            const newIds = new Set(updatedGigs.map(g => g.id));
+            
+            // Se os IDs são os mesmos, fazer merge otimizado
+            if (prevIds.size === newIds.size && 
+                Array.from(prevIds).every((id: string) => newIds.has(id))) {
+              // Apenas atualizar se houver diferenças
+              const hasChanges = updatedGigs.some(newGig => {
+                const oldGig = prevGigs.find(g => g.id === newGig.id);
+                return !oldGig || JSON.stringify(oldGig) !== JSON.stringify(newGig);
+              });
+              return hasChanges ? updatedGigs : prevGigs;
+            }
+            
+            return updatedGigs;
+          });
+        });
+      }
     } catch (error: any) {
       console.error('Erro ao carregar shows:', error);
       if (error.message === 'User not authenticated') {
         setIsAuthModalOpen(true);
       }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
+  };
+
+  // Função para atualizar um gig específico no estado sem recarregar tudo
+  const updateGigInState = (updatedGig: Gig) => {
+    setGigs(prevGigs => prevGigs.map(gig => 
+      gig.id === updatedGig.id ? updatedGig : gig
+    ));
   };
 
   const handleSaveGig = async (gig: any) => {
@@ -177,16 +210,19 @@ const App: React.FC = () => {
     try {
       setIsSyncing(true);
       if (gig.id) {
-        await gigService.updateGig(gig.id, gig);
+        const updatedGig = await gigService.updateGig(gig.id, gig);
+        updateGigInState(updatedGig);
         toast.success('Show atualizado com sucesso!');
       } else {
-        await gigService.createGig(gig);
+        const newGig = await gigService.createGig(gig);
+        setGigs(prevGigs => [...prevGigs, newGig].sort((a, b) => 
+          a.date.localeCompare(b.date)
+        ));
         toast.success('Show criado com sucesso!');
       }
       setIsModalOpen(false);
       setEditingGig(null);
       setPreSelectedDate(null);
-      await loadGigs();
     } catch (error: any) {
       console.error('Erro ao salvar show:', error);
       toast.error(error.message || 'Erro ao salvar show');
@@ -211,18 +247,31 @@ const App: React.FC = () => {
     const gig = gigs.find(g => g.id === deleteConfirmId);
     const gigTitle = gig?.title || 'este show';
     
+    // Otimista: remover da UI imediatamente
+    const deletedGig = gig;
+    setGigs(prevGigs => prevGigs.filter(g => g.id !== deleteConfirmId));
+    
     try {
       setIsSyncing(true);
       await gigService.deleteGig(deleteConfirmId);
       toast.success(`"${gigTitle}" excluído com sucesso!`, 3000, () => {
         // Undo function - recriar o show
-        if (gig) {
-          gigService.createGig(gig).then(() => loadGigs());
+        if (deletedGig) {
+          gigService.createGig(deletedGig).then((newGig) => {
+            setGigs(prevGigs => [...prevGigs, newGig].sort((a, b) => 
+              a.date.localeCompare(b.date)
+            ));
+          });
         }
       });
-      await loadGigs();
     } catch (error: any) {
       console.error('Erro ao excluir show:', error);
+      // Reverter mudança otimista em caso de erro
+      if (deletedGig) {
+        setGigs(prevGigs => [...prevGigs, deletedGig].sort((a, b) => 
+          a.date.localeCompare(b.date)
+        ));
+      }
       toast.error(error.message || 'Erro ao excluir show');
     } finally {
       setIsSyncing(false);
@@ -258,17 +307,22 @@ const App: React.FC = () => {
     const idsToDelete = Array.from(selectedGigIds) as string[];
     const deletedGigs = gigs.filter(g => idsToDelete.includes(g.id));
     
+    // Otimista: remover da UI imediatamente
+    setGigs(prevGigs => prevGigs.filter(g => !idsToDelete.includes(g.id)));
+    setSelectedGigIds(new Set());
+    setIsMultiSelectMode(false);
+    
     try {
       setIsSyncing(true);
-      for (const id of idsToDelete) {
-        await gigService.deleteGig(id);
-      }
-      await loadGigs();
-      setSelectedGigIds(new Set());
-      setIsMultiSelectMode(false);
+      // Deletar em paralelo para melhor performance
+      await Promise.all(idsToDelete.map(id => gigService.deleteGig(id)));
       toast.success(`${idsToDelete.length} evento(s) excluído(s) com sucesso!`);
     } catch (error: any) {
       console.error('Erro ao excluir eventos:', error);
+      // Reverter mudança otimista em caso de erro
+      setGigs(prevGigs => [...prevGigs, ...deletedGigs].sort((a, b) => 
+        a.date.localeCompare(b.date)
+      ));
       toast.error(error.message || 'Erro ao excluir eventos');
     } finally {
       setIsSyncing(false);
@@ -299,20 +353,26 @@ const App: React.FC = () => {
       return;
     }
 
+    const gig = gigs.find(g => g.id === id);
+    if (!gig) return;
+
+    const newStatus = gig.status === GigStatus.PAID ? GigStatus.PENDING : GigStatus.PAID;
+    
+    // Otimista: atualizar UI imediatamente
+    const optimisticGig = { ...gig, status: newStatus };
+    updateGigInState(optimisticGig);
+
     try {
-      setIsSyncing(true);
-      const gig = gigs.find(g => g.id === id);
-      if (gig) {
-        const newStatus = gig.status === GigStatus.PAID ? GigStatus.PENDING : GigStatus.PAID;
-        await gigService.toggleGigStatus(id, gig.status);
-        await loadGigs();
-        toast.success(`Status alterado para ${newStatus === GigStatus.PAID ? 'Pago' : 'Pendente'}`);
-      }
+      // Atualizar no banco (sem recarregar tudo)
+      const updatedGig = await gigService.toggleGigStatus(id, gig.status);
+      // Atualizar com dados reais do servidor
+      updateGigInState(updatedGig);
+      toast.success(`Status alterado para ${newStatus === GigStatus.PAID ? 'Pago' : 'Pendente'}`);
     } catch (error: any) {
       console.error('Erro ao alterar status:', error);
+      // Reverter mudança otimista em caso de erro
+      updateGigInState(gig);
       toast.error(error.message || 'Erro ao alterar status');
-    } finally {
-      setIsSyncing(false);
     }
   };
 
@@ -438,16 +498,22 @@ const App: React.FC = () => {
       
       // Create gigs in Supabase in batches to avoid timeout
       const batchSize = 10;
+      const createdGigs: Gig[] = [];
+      
       for (let i = 0; i < gigsToImport.length; i += batchSize) {
         const batch = gigsToImport.slice(i, i + batchSize);
-        await Promise.all(batch.map(gig => gigService.createGig(gig)));
+        const batchResults = await Promise.all(batch.map(gig => gigService.createGig(gig)));
+        createdGigs.push(...batchResults);
       }
 
       // Clear preview after import completes (but keep count until loading finishes)
       setImportPreviewGigs([]);
       
-      // Reload gigs
-      await loadGigs();
+      // Adicionar novos gigs ao estado sem recarregar tudo
+      setGigs(prevGigs => [...prevGigs, ...createdGigs].sort((a, b) => 
+        a.date.localeCompare(b.date)
+      ));
+      
       toast.success(`${totalCount} eventos importados com sucesso!`);
       
       // Clear count after everything completes

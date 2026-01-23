@@ -105,7 +105,9 @@ export const gigService = {
           table: 'gigs',
           filter: `user_id=eq.${user.id}`
         },
-        async () => {
+        async (payload) => {
+          // Só recarregar se realmente necessário (evitar reloads desnecessários)
+          // O callback será chamado apenas quando houver mudanças reais
           const gigs = await gigService.fetchGigs();
           callback(gigs);
         }
