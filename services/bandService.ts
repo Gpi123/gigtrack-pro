@@ -85,17 +85,29 @@ export const bandService = {
 
   // Buscar membros de uma banda
   fetchBandMembers: async (bandId: string): Promise<BandMember[]> => {
-    const { data, error } = await supabase
+    const { data: members, error: membersError } = await supabase
       .from('band_members')
-      .select(`
-        *,
-        profile:profiles!band_members_user_id_fkey(id, email, full_name, avatar_url)
-      `)
+      .select('*')
       .eq('band_id', bandId)
       .order('joined_at', { ascending: true });
 
-    if (error) throw error;
-    return data || [];
+    if (membersError) throw membersError;
+    if (!members || members.length === 0) return [];
+
+    // Buscar perfis dos membros
+    const userIds = members.map(m => m.user_id);
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, avatar_url')
+      .in('id', userIds);
+
+    if (profilesError) throw profilesError;
+
+    // Combinar membros com perfis
+    return members.map(member => ({
+      ...member,
+      profile: profiles?.find(p => p.id === member.user_id) || undefined
+    })) as BandMember[];
   },
 
   // Convidar usuário por email
