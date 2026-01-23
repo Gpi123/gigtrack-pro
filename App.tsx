@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [deleteMultipleConfirmOpen, setDeleteMultipleConfirmOpen] = useState(false);
   const [importPreviewOpen, setImportPreviewOpen] = useState(false);
   const [importPreviewGigs, setImportPreviewGigs] = useState<Gig[]>([]);
+  const [importingCount, setImportingCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid'>('all');
   const toast = useToast();
@@ -275,11 +276,16 @@ const App: React.FC = () => {
     }
   };
 
-  const isLoadingBulkOperation = isImporting || (isSyncing && selectedGigIds.size > 0);
+  const isLoadingBulkOperation = isImporting || (isSyncing && (selectedGigIds.size > 0 || importPreviewGigs.length > 0));
 
   const getLoadingMessage = () => {
     if (isImporting) {
-      return `Importando ${importPreviewGigs.length} evento(s)...`;
+      // Use importingCount if available, otherwise try importPreviewGigs length
+      const count = importingCount || importPreviewGigs.length;
+      if (count > 0) {
+        return `Importando ${count} evento(s)...`;
+      }
+      return 'Importando eventos...';
     }
     if (isSyncing && selectedGigIds.size > 0) {
       return `Excluindo ${selectedGigIds.size} evento(s)...`;
@@ -424,9 +430,11 @@ const App: React.FC = () => {
 
   const confirmImport = async () => {
     const gigsToImport = [...importPreviewGigs]; // Copy array before clearing
+    const totalCount = gigsToImport.length;
     try {
       setIsImporting(true);
       setImportPreviewOpen(false);
+      setImportingCount(totalCount); // Set count for loading message
       
       // Create gigs in Supabase in batches to avoid timeout
       const batchSize = 10;
@@ -435,17 +443,19 @@ const App: React.FC = () => {
         await Promise.all(batch.map(gig => gigService.createGig(gig)));
       }
 
-      // Clear preview before reloading
+      // Clear preview and count after import completes
       setImportPreviewGigs([]);
+      setImportingCount(0);
       
       // Reload gigs
       await loadGigs();
-      toast.success(`${gigsToImport.length} eventos importados com sucesso!`);
+      toast.success(`${totalCount} eventos importados com sucesso!`);
     } catch (error: any) {
       console.error('Erro ao importar:', error);
       toast.error(`Erro ao importar: ${error.message || 'Erro desconhecido'}`);
-      // Clear preview even on error
+      // Clear preview and count even on error
       setImportPreviewGigs([]);
+      setImportingCount(0);
     } finally {
       setIsImporting(false);
     }
