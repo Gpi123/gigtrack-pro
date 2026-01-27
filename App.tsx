@@ -18,6 +18,7 @@ import SideMenu from './components/SideMenu';
 import EmptyState from './components/EmptyState';
 import LoadingOverlay from './components/LoadingOverlay';
 import { ToastContainer, useToast } from './components/Toast';
+import AcceptInvite from './components/AcceptInvite';
 
 const App: React.FC = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
@@ -49,6 +50,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid'>('all');
   const [selectedBandId, setSelectedBandId] = useState<string | null>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const toast = useToast();
 
   // Recarregar gigs quando mudar o contexto (pessoal/banda)
@@ -57,6 +59,25 @@ const App: React.FC = () => {
       loadGigs();
     }
   }, [selectedBandId, user]);
+
+  // Detectar token de convite na URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (token) {
+      setInviteToken(token);
+      // Limpar token da URL
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    
+    // Verificar se há token pendente no localStorage (após login)
+    const pendingToken = localStorage.getItem('pendingInviteToken');
+    if (pendingToken && !token) {
+      setInviteToken(pendingToken);
+      localStorage.removeItem('pendingInviteToken');
+    }
+  }, []);
 
   // Carregar dados do Supabase quando usuário estiver autenticado
   useEffect(() => {
@@ -79,6 +100,14 @@ const App: React.FC = () => {
         const profile = await authService.getUserProfile(currentUser.id);
         setUserProfile(profile);
         await loadGigs();
+        
+        // Se há token pendente, processar convite após login
+        const pendingToken = localStorage.getItem('pendingInviteToken');
+        if (pendingToken) {
+          setInviteToken(pendingToken);
+          localStorage.removeItem('pendingInviteToken');
+        }
+        
         // Limpar hash da URL após processar
         if (accessToken) {
           window.history.replaceState(null, '', window.location.pathname);
@@ -97,6 +126,14 @@ const App: React.FC = () => {
         const profile = await authService.getUserProfile(user.id);
         setUserProfile(profile);
         await loadGigs();
+        
+        // Se há token pendente, processar convite após login
+        const pendingToken = localStorage.getItem('pendingInviteToken');
+        if (pendingToken) {
+          setInviteToken(pendingToken);
+          localStorage.removeItem('pendingInviteToken');
+        }
+        
         // Limpar hash da URL após processar
         if (window.location.hash.includes('access_token')) {
           window.history.replaceState(null, '', window.location.pathname);
@@ -943,6 +980,20 @@ const App: React.FC = () => {
           confirmText={`Importar ${importPreviewGigs.length}`}
           cancelText="Cancelar"
           isDestructive={false}
+        />
+      )}
+
+      {/* Modal de Aceitar Convite */}
+      {inviteToken && (
+        <AcceptInvite
+          token={inviteToken}
+          onComplete={() => {
+            setInviteToken(null);
+            // Recarregar bandas e gigs após aceitar convite
+            if (user) {
+              loadGigs();
+            }
+          }}
         />
       )}
     </div>

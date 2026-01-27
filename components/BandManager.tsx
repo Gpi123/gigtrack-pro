@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, Mail, X, Trash2, Loader2, Check, UserPlus, Copy, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Plus, X, Trash2, Loader2, Check, UserPlus, Copy, CheckCircle, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'react-qr-code';
 import { bandService } from '../services/bandService';
 import { Band, BandMember, BandInvite } from '../types';
 import { useToast } from './Toast';
@@ -15,13 +16,12 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
   const [invites, setInvites] = useState<BandInvite[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [newBandName, setNewBandName] = useState('');
   const [newBandDescription, setNewBandDescription] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
   const [selectedBand, setSelectedBand] = useState<Band | null>(null);
   const [createdInvite, setCreatedInvite] = useState<{ token: string; email: string; bandName: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const qrCodeRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -81,35 +81,24 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
   };
 
   const handleInviteUser = async () => {
-    if (!inviteEmail.trim() || !selectedBand) {
-      toast.error('Email é obrigatório');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(inviteEmail.trim())) {
-      toast.error('Email inválido');
-      return;
-    }
+    if (!selectedBand) return;
 
     try {
       setLoading(true);
-      const invite = await bandService.inviteUser(selectedBand.id, inviteEmail.trim());
+      // Criar convite sem email específico (email genérico para permitir qualquer usuário)
+      const invite = await bandService.inviteUser(selectedBand.id, '');
       await loadBandDetails(selectedBand.id);
-      setShowInviteModal(false);
       
-      // Mostrar modal com link do convite
-      const inviteUrl = `${window.location.origin}/accept-invite?token=${invite.token}`;
+      // Mostrar modal com QR code do convite
       setCreatedInvite({
         token: invite.token,
-        email: inviteEmail.trim(),
+        email: '',
         bandName: selectedBand.name
       });
       
-      setInviteEmail('');
-      toast.success('Convite criado! Compartilhe o link abaixo.');
+      toast.success('Convite criado! Compartilhe o QR code.');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao enviar convite');
+      toast.error(error.message || 'Erro ao criar convite');
     } finally {
       setLoading(false);
     }
@@ -117,11 +106,58 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
 
   const copyInviteLink = () => {
     if (!createdInvite) return;
-    const inviteUrl = `${window.location.origin}/accept-invite?token=${createdInvite.token}`;
+    const inviteUrl = `${window.location.origin}?token=${createdInvite.token}`;
     navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
     toast.success('Link copiado!');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyQRCodeImage = async () => {
+    if (!qrCodeRef.current || !createdInvite) return;
+    
+    try {
+      // Buscar o elemento SVG dentro do QR code
+      const svgElement = qrCodeRef.current.querySelector('svg');
+      if (!svgElement) return;
+
+      // Converter SVG para canvas e depois para blob
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const item = new ClipboardItem({ 'image/png': blob });
+              navigator.clipboard.write([item]).then(() => {
+                setCopied(true);
+                toast.success('QR Code copiado!');
+                setTimeout(() => setCopied(false), 2000);
+              }).catch(() => {
+                // Fallback: copiar URL
+                copyInviteLink();
+              });
+            }
+            URL.revokeObjectURL(url);
+          });
+        }
+      };
+      
+      img.src = url;
+    } catch (error) {
+      console.error('Erro ao copiar QR code:', error);
+      // Fallback: copiar URL
+      copyInviteLink();
+    }
   };
 
   const handleRemoveMember = async (userId: string) => {
@@ -230,10 +266,11 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-white uppercase">Membros</span>
               <button
-                onClick={() => setShowInviteModal(true)}
-                className="flex items-center gap-1 px-2 py-1 bg-[#3057F2] hover:bg-[#2545D9] text-white text-xs rounded-lg transition-colors"
+                onClick={handleInviteUser}
+                disabled={loading}
+                className="flex items-center gap-1 px-2 py-1 bg-[#3057F2] hover:bg-[#2545D9] text-white text-xs rounded-lg transition-colors disabled:opacity-50"
               >
-                <UserPlus size={12} /> Convidar
+                {loading ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />} Convidar
               </button>
             </div>
             <div className="space-y-1">
@@ -331,80 +368,61 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
         </div>
       )}
 
-      {/* Modal Convidar */}
-      {showInviteModal && selectedBand && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowInviteModal(false)} />
-          <div className="relative bg-[#24272D] border border-[#31333B] rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-white mb-4">Convidar para {selectedBand.name}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-white uppercase mb-1 block">Email do Google</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="usuario@gmail.com"
-                  className="w-full bg-[#1E1F25] border border-[#31333B] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#3057F2] transition-colors"
-                  autoFocus
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowInviteModal(false)}
-                  className="flex-1 px-4 py-2 bg-[#1E1F25] hover:bg-[#31333B] text-white rounded-xl font-semibold transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleInviteUser}
-                  disabled={loading || !inviteEmail.trim()}
-                  className="flex-1 px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                  Criar Convite
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal com Link do Convite */}
+      {/* Modal com QR Code do Convite */}
       {createdInvite && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setCreatedInvite(null)} />
           <div className="relative bg-[#24272D] border border-[#31333B] rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-white mb-2">Convite Criado!</h3>
-            <p className="text-sm text-white/70 mb-4">
-              Compartilhe este link com <strong>{createdInvite.email}</strong> para a banda <strong>{createdInvite.bandName}</strong>
+            <h3 className="text-lg font-bold text-white mb-2">Convite para {createdInvite.bandName}</h3>
+            <p className="text-sm text-white/70 mb-4 text-center">
+              Compartilhe este QR Code ou link para convidar alguém
             </p>
-            <div className="bg-[#1E1F25] border border-[#31333B] rounded-xl p-4 mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-bold text-white/70 uppercase">Link do Convite</span>
-                <button
-                  onClick={copyInviteLink}
-                  className="ml-auto p-1.5 hover:bg-[#24272D] rounded-lg transition-colors"
-                  title="Copiar link"
-                >
-                  {copied ? (
-                    <CheckCircle size={16} className="text-green-500" />
-                  ) : (
-                    <Copy size={16} className="text-white" />
-                  )}
-                </button>
-              </div>
-              <p className="text-xs text-white/90 break-all font-mono">
-                {`${window.location.origin}/accept-invite?token=${createdInvite.token}`}
-              </p>
+            
+            {/* QR Code */}
+            <div className="bg-white p-4 rounded-xl mb-4 flex items-center justify-center" ref={qrCodeRef}>
+              <QRCodeSVG
+                value={`${window.location.origin}?token=${createdInvite.token}`}
+                size={200}
+                level="H"
+                bgColor="#FFFFFF"
+                fgColor="#000000"
+              />
             </div>
+
+            {/* Botões de ação */}
+            <div className="space-y-2 mb-4">
+              <button
+                onClick={copyQRCodeImage}
+                className="w-full px-4 py-2.5 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle size={18} />
+                    QR Code Copiado!
+                  </>
+                ) : (
+                  <>
+                    <QrCode size={18} />
+                    Copiar QR Code
+                  </>
+                )}
+              </button>
+              <button
+                onClick={copyInviteLink}
+                className="w-full px-4 py-2.5 bg-[#1E1F25] hover:bg-[#31333B] text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <Copy size={18} />
+                Copiar Link
+              </button>
+            </div>
+
             <div className="space-y-2">
-              <p className="text-xs text-white/60">
-                💡 <strong>Dica:</strong> Envie este link por WhatsApp, email ou qualquer outro meio. O usuário precisa fazer login com o email <strong>{createdInvite.email}</strong> para aceitar.
+              <p className="text-xs text-white/60 text-center">
+                💡 <strong>Dica:</strong> Escaneie o QR Code ou compartilhe o link. O usuário será redirecionado para fazer login com Google e entrará automaticamente na banda.
               </p>
               <button
                 onClick={() => setCreatedInvite(null)}
-                className="w-full px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors"
+                className="w-full px-4 py-2 bg-[#31333B] hover:bg-[#1E1F25] text-white rounded-xl font-semibold transition-colors"
               >
                 Fechar
               </button>

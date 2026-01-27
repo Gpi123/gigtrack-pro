@@ -146,11 +146,14 @@ export const bandService = {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
+    // Se email estiver vazio, usar string vazia (permite qualquer usuário aceitar)
+    const emailValue = email && email.trim() ? email.toLowerCase().trim() : '';
+    
     const { data, error } = await supabase
       .from('band_invites')
       .insert({
         band_id: bandId,
-        email: email.toLowerCase().trim(),
+        email: emailValue,
         invited_by: user.id,
         token,
         expires_at: expiresAt.toISOString()
@@ -233,8 +236,9 @@ export const bandService = {
       throw new Error('Convite expirado');
     }
 
-    // Verificar se email corresponde
-    if (invite.email.toLowerCase() !== user.email?.toLowerCase()) {
+    // Verificar se email corresponde (apenas se o convite tiver email específico)
+    // Se o email do convite estiver vazio, permite qualquer usuário aceitar
+    if (invite.email && invite.email.trim() !== '' && invite.email.toLowerCase() !== user.email?.toLowerCase()) {
       throw new Error('Este convite não é para o seu email');
     }
 
