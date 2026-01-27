@@ -72,7 +72,15 @@ const App: React.FC = () => {
   // Recarregar gigs quando mudar o contexto (pessoal/banda)
   useEffect(() => {
     if (user) {
-      loadGigs();
+      // Desinscrever da subscription anterior antes de recarregar
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current).then(() => {
+          subscriptionRef.current = null;
+          loadGigs();
+        });
+      } else {
+        loadGigs();
+      }
     }
   }, [selectedBandId, user]);
 
@@ -746,21 +754,6 @@ const App: React.FC = () => {
             >
               <User size={20} className="text-white" />
             </button>
-            <button 
-              onClick={() => { 
-                if (!user) {
-                  setIsAuthModalOpen(true);
-                } else {
-                  setEditingGig(null);
-                  setPreSelectedDate(null);
-                  setIsModalOpen(true);
-                }
-              }} 
-              className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-3 py-3 sm:px-5 sm:py-2.5 rounded-full font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/20"
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Novo Show</span>
-            </button>
           </div>
         </div>
       </header>
@@ -845,12 +838,34 @@ const App: React.FC = () => {
 
             <div className="lg:col-span-8">
               <div className="flex flex-col gap-4 mb-8">
-                <AgendaSelector
-                  selectedBandId={selectedBandId}
-                  onBandSelect={setSelectedBandId}
-                  isPeriodActive={isPeriodActive}
-                  selectedCalendarDate={selectedCalendarDate}
-                />
+                {/* Título e Botão Novo Show */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <AgendaSelector
+                      selectedBandId={selectedBandId}
+                      onBandSelect={setSelectedBandId}
+                      isPeriodActive={isPeriodActive}
+                      selectedCalendarDate={selectedCalendarDate}
+                    />
+                  </div>
+                  {!isPeriodActive && !selectedCalendarDate && (
+                    <button 
+                      onClick={() => { 
+                        if (!user) {
+                          setIsAuthModalOpen(true);
+                        } else {
+                          setEditingGig(null);
+                          setPreSelectedDate(null);
+                          setIsModalOpen(true);
+                        }
+                      }} 
+                      className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/20 flex-shrink-0"
+                    >
+                      <Plus size={18} />
+                      <span>Novo Show</span>
+                    </button>
+                  )}
+                </div>
                 
                 {/* Divider */}
                 {!isPeriodActive && !selectedCalendarDate && (
@@ -859,7 +874,7 @@ const App: React.FC = () => {
                 
                 {/* Busca e Filtros */}
                 {!isPeriodActive && !selectedCalendarDate && (
-                  <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <div className="flex flex-col sm:flex-row gap-3 w-full items-start sm:items-center">
                     {/* Busca */}
                     <div className="relative flex-1 sm:flex-initial">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={18} />
@@ -872,8 +887,8 @@ const App: React.FC = () => {
                       />
                     </div>
                     
-                    {/* Filtro de Status */}
-                    <div className="flex gap-2">
+                    {/* Filtro de Status e Excluir Várias */}
+                    <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => setFilterStatus('all')}
                         className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
@@ -904,26 +919,28 @@ const App: React.FC = () => {
                       >
                         Pagos
                       </button>
+                      {filteredGigs.length > 0 && (
+                        <button
+                          onClick={() => {
+                            if (isMultiSelectMode) {
+                              setIsMultiSelectMode(false);
+                              setSelectedGigIds(new Set());
+                            } else {
+                              setIsMultiSelectMode(true);
+                            }
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all"
+                        >
+                          {!isMultiSelectMode && <Trash2 size={16} />}
+                          {isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
                 
-                {filteredGigs.length > 0 && !isPeriodActive && !selectedCalendarDate && (
+                {filteredGigs.length > 0 && !isPeriodActive && !selectedCalendarDate && isMultiSelectMode && (
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        if (isMultiSelectMode) {
-                          setIsMultiSelectMode(false);
-                          setSelectedGigIds(new Set());
-                        } else {
-                          setIsMultiSelectMode(true);
-                        }
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all"
-                    >
-                      {!isMultiSelectMode && <Trash2 size={16} />}
-                      {isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}
-                    </button>
                     {isMultiSelectMode && filteredGigs.length > 0 && (
                       <button
                         onClick={async () => {

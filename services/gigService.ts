@@ -114,41 +114,89 @@ export const gigService = {
     if (!user) return null;
     
     // Criar filtro baseado no contexto (pessoal ou banda)
-    const filter = bandId 
-      ? `band_id=eq.${bandId}`
-      : `user_id=eq.${user.id}.and(band_id.is.null)`;
-    
-    const channelName = `gigs_changes_${bandId || 'personal'}_${Date.now()}`;
+    // Para bandas, escutar todos os eventos da banda
+    // Para pessoal, escutar apenas eventos pessoais do usuário
+    const channelName = `gigs_changes_${bandId || 'personal'}_${user.id}_${Date.now()}`;
     
     const channel = supabase
-      .channel(channelName)
-      .on(
+      .channel(channelName);
+    
+    if (bandId) {
+      // Para bandas: escutar todos os eventos onde band_id = bandId
+      // Usar formato correto do PostgREST para o filtro
+      channel.on(
         'postgres_changes',
         {
           event: '*', // INSERT, UPDATE, DELETE
           schema: 'public',
           table: 'gigs',
-          filter: filter
+          filter: `band_id=eq.${bandId}`
         },
         async (payload) => {
-          console.log('Realtime event:', payload.eventType, payload.new || payload.old);
+          console.log('🎵 Realtime event (band):', payload.eventType, {
+            new: payload.new,
+            old: payload.old,
+            bandId: payload.new?.band_id || payload.old?.band_id
+          });
+          
+          // Verificar se o evento é realmente da banda correta
+          const eventBandId = payload.new?.band_id || payload.old?.band_id;
+          if (eventBandId !== bandId) {
+            console.log('⚠️ Evento ignorado - banda diferente:', eventBandId, 'vs', bandId);
+            return;
+          }
           
           // Recarregar dados atualizados do banco
           try {
             const gigs = await gigService.fetchGigs(bandId);
+            console.log('✅ Recarregados', gigs.length, 'gigs após evento realtime');
+            callback(gigs);
+          } catch (error) {
+            console.error('❌ Erro ao recarregar gigs após mudança realtime:', error);
+          }
+        }
+      );
+    } else {
+      // Para pessoal: escutar eventos onde user_id = user.id AND band_id IS NULL
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'gigs',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('Realtime event (personal):', payload.eventType, payload.new || payload.old);
+          
+          // Filtrar apenas gigs pessoais (band_id IS NULL)
+          const newGig = payload.new as Gig | null;
+          const oldGig = payload.old as Gig | null;
+          
+          // Se é um gig de banda, ignorar
+          if (newGig && newGig.band_id !== null) return;
+          if (oldGig && oldGig.band_id !== null) return;
+          
+          // Recarregar dados atualizados do banco
+          try {
+            const gigs = await gigService.fetchGigs(null);
             callback(gigs);
           } catch (error) {
             console.error('Erro ao recarregar gigs após mudança realtime:', error);
           }
         }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`Subscribed to realtime changes for ${bandId || 'personal'} agenda`);
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('Erro na subscription de realtime');
-        }
-      });
+      );
+    }
+    
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log(`✅ Subscribed to realtime changes for ${bandId || 'personal'} agenda`);
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Erro na subscription de realtime:', status);
+      } else {
+        console.log('🔄 Subscription status:', status);
+      }
+    });
 
     return channel;
   }
