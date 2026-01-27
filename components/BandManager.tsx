@@ -28,6 +28,31 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
     loadBands();
   }, []);
 
+  // Recarregar bandas quando selectedBandId mudar e a banda não estiver na lista
+  useEffect(() => {
+    if (selectedBandId) {
+      const band = bands.find(b => b.id === selectedBandId);
+      if (!band && bands.length > 0) {
+        // Se a banda não está na lista, recarregar as bandas
+        loadBands();
+      }
+    }
+  }, [selectedBandId]);
+  
+  // Atualizar selectedBand quando bands ou selectedBandId mudar
+  useEffect(() => {
+    if (selectedBandId) {
+      const band = bands.find(b => b.id === selectedBandId);
+      if (band) {
+        setSelectedBand(band);
+      } else {
+        setSelectedBand(null);
+      }
+    } else {
+      setSelectedBand(null);
+    }
+  }, [bands, selectedBandId]);
+
   useEffect(() => {
     if (selectedBand) {
       loadBandDetails(selectedBand.id);

@@ -6,7 +6,7 @@ import { useToast } from './Toast';
 
 interface AcceptInviteProps {
   token: string;
-  onComplete: () => void;
+  onComplete: (bandId: string) => void;
 }
 
 const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
@@ -28,13 +28,13 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
 
         // Usuário está logado, aceitar convite
         setStatus('accepting');
-        await bandService.acceptInvite(token);
+        const bandId = await bandService.acceptInvite(token);
         setStatus('success');
         toast.success('Convite aceito! Você agora é membro da banda.');
         
-        // Aguardar um pouco antes de redirecionar
+        // Aguardar um pouco antes de redirecionar e selecionar a banda
         setTimeout(() => {
-          onComplete();
+          onComplete(bandId);
         }, 2000);
       } catch (error: any) {
         console.error('Erro ao processar convite:', error);

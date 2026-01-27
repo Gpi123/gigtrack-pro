@@ -987,11 +987,17 @@ const App: React.FC = () => {
       {inviteToken && (
         <AcceptInvite
           token={inviteToken}
-          onComplete={() => {
+          onComplete={async (bandId) => {
             setInviteToken(null);
-            // Recarregar bandas e gigs após aceitar convite
+            // Recarregar bandas primeiro para incluir a nova banda
             if (user) {
-              loadGigs();
+              // Aguardar um pouco para garantir que o banco foi atualizado
+              setTimeout(async () => {
+                // Selecionar automaticamente a banda após aceitar convite
+                setSelectedBandId(bandId);
+                // Recarregar gigs para mostrar os eventos da banda
+                await loadGigs();
+              }, 500);
             }
           }}
         />

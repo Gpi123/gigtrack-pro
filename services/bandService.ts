@@ -184,7 +184,7 @@ export const bandService = {
   },
 
   // Aceitar convite
-  acceptInvite: async (token: string): Promise<void> => {
+  acceptInvite: async (token: string): Promise<string> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -225,7 +225,7 @@ export const bandService = {
           .from('band_invites')
           .update({ status: 'accepted' })
           .eq('id', invite.id);
-        return;
+        return invite.band_id;
       }
       throw memberError;
     }
@@ -235,6 +235,9 @@ export const bandService = {
       .from('band_invites')
       .update({ status: 'accepted' })
       .eq('id', invite.id);
+
+    // Retornar o band_id para selecionar automaticamente
+    return invite.band_id;
   },
 
   // Remover membro da banda
