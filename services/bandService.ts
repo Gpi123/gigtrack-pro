@@ -196,7 +196,18 @@ export const bandService = {
       .eq('status', 'pending')
       .single();
 
-    if (inviteError) throw new Error('Convite inválido ou expirado');
+    if (inviteError) {
+      console.error('Erro ao buscar convite:', inviteError);
+      // Melhorar mensagem de erro
+      if (inviteError.code === 'PGRST116') {
+        throw new Error('Convite não encontrado. Verifique se o link está correto.');
+      }
+      throw new Error(`Convite inválido ou expirado: ${inviteError.message}`);
+    }
+
+    if (!invite) {
+      throw new Error('Convite não encontrado');
+    }
 
     // Verificar se expirou
     if (new Date(invite.expires_at) < new Date()) {

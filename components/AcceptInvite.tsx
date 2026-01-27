@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Loader2, CheckCircle, XCircle, LogIn } from 'lucide-react';
 import { authService } from '../services/authService';
 import { bandService } from '../services/bandService';
@@ -12,16 +12,23 @@ interface AcceptInviteProps {
 const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
   const [status, setStatus] = useState<'checking' | 'needs-login' | 'accepting' | 'success' | 'error'>('checking');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const processedRef = useRef(false);
   const toast = useToast();
 
   useEffect(() => {
+    // Evitar processar múltiplas vezes
+    if (processedRef.current) return;
+    
     const processInvite = async () => {
       try {
+        processedRef.current = true;
+        
         // Verificar se usuário está autenticado
         const user = await authService.getCurrentUser();
         
         if (!user) {
           // Usuário não está logado, precisa fazer login
+          processedRef.current = false; // Permitir tentar novamente após login
           setStatus('needs-login');
           return;
         }
@@ -38,6 +45,7 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
         }, 2000);
       } catch (error: any) {
         console.error('Erro ao processar convite:', error);
+        processedRef.current = false; // Permitir tentar novamente em caso de erro
         setStatus('error');
         setErrorMessage(error.message || 'Erro ao processar convite');
         toast.error(error.message || 'Erro ao processar convite');
