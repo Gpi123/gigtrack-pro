@@ -120,6 +120,7 @@ const App: React.FC = () => {
         if (token || pendingToken) {
           // Se há convite, processar e pular onboarding
           setInviteToken(token || pendingToken);
+          setShowOnboarding(false); // Garantir que onboarding não aparece
           if (pendingToken) localStorage.removeItem('pendingInviteToken');
           // Limpar token da URL mas manter no estado
           if (token) {
@@ -127,7 +128,7 @@ const App: React.FC = () => {
           }
           await loadGigs();
         } else {
-          // Verificar se precisa mostrar onboarding
+          // Verificar se precisa mostrar onboarding (apenas se não houver convite)
           if (profile && !profile.has_completed_onboarding) {
             setShowOnboarding(true);
           } else {
@@ -161,10 +162,15 @@ const App: React.FC = () => {
         if (token || pendingToken) {
           // Se há convite, processar e pular onboarding
           setInviteToken(token || pendingToken);
+          setShowOnboarding(false); // Garantir que onboarding não aparece
           if (pendingToken) localStorage.removeItem('pendingInviteToken');
+          // Limpar token da URL se necessário
+          if (token) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
           await loadGigs();
         } else {
-          // Verificar se precisa mostrar onboarding
+          // Verificar se precisa mostrar onboarding (apenas se não houver convite)
           if (profile && !profile.has_completed_onboarding) {
             setShowOnboarding(true);
           } else {
@@ -1028,6 +1034,8 @@ const App: React.FC = () => {
           token={inviteToken}
           onComplete={async (bandId) => {
             setInviteToken(null);
+            setShowOnboarding(false); // Garantir que onboarding não aparece
+            
             // Marcar onboarding como completo se ainda não foi
             if (userProfile && !userProfile.has_completed_onboarding) {
               await authService.completeOnboarding();
@@ -1049,8 +1057,8 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Modal de Onboarding */}
-      {showOnboarding && user && (
+      {/* Modal de Onboarding - não mostrar se há convite pendente */}
+      {showOnboarding && user && !inviteToken && (
         <OnboardingModal
           isOpen={showOnboarding}
           onComplete={handleOnboardingComplete}
