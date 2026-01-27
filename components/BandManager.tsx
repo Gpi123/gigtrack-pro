@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Users, Plus, X, Trash2, Loader2, Check, UserPlus, Copy, CheckCircle, QrCode } from 'lucide-react';
-import { QRCodeSVG } from 'react-qr-code';
+import QRCode from 'react-qr-code';
 import { bandService } from '../services/bandService';
 import { Band, BandMember, BandInvite } from '../types';
 import { useToast } from './Toast';
@@ -380,7 +380,7 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
             
             {/* QR Code */}
             <div className="bg-white p-4 rounded-xl mb-4 flex items-center justify-center" ref={qrCodeRef}>
-              <QRCodeSVG
+              <QRCode
                 value={`${window.location.origin}?token=${createdInvite.token}`}
                 size={200}
                 level="H"
