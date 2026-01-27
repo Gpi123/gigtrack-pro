@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, ChevronDown, Users, User, Plus, UserPlus, X, Loader2 } from 'lucide-react';
+import { LayoutDashboard, ChevronDown, Users, User, Plus, UserPlus, X, Loader2, Settings, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { bandService } from '../services/bandService';
 import { Band } from '../types';
 import { useToast } from './Toast';
@@ -23,13 +23,27 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newBandName, setNewBandName] = useState('');
+  const [editBandName, setEditBandName] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
   useEffect(() => {
     loadBands();
   }, []);
+
+  // Atualizar selectedBand quando bands mudar (após edição)
+  useEffect(() => {
+    if (selectedBandId) {
+      const updatedBand = bands.find(b => b.id === selectedBandId);
+      if (updatedBand) {
+        // Atualizar o nome no título se a banda foi editada
+        // O selectedBand será atualizado automaticamente pelo getCurrentAgendaName
+      }
+    }
+  }, [bands, selectedBandId]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -50,6 +64,16 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
       setLoading(true);
       const userBands = await bandService.fetchUserBands();
       setBands(userBands);
+      
+      // Verificar se a banda selecionada ainda existe
+      if (selectedBandId) {
+        const updatedBand = userBands.find(b => b.id === selectedBandId);
+        if (!updatedBand) {
+          // Banda foi deletada, redirecionar para agenda pessoal
+          onBandSelect(null);
+          toast.info('A banda foi excluída. Você foi redirecionado para sua agenda pessoal.');
+        }
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar bandas');
     } finally {
@@ -106,15 +130,15 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
           />
         </button>
 
-        {/* Botão de Convidar - aparece apenas quando uma banda está selecionada */}
+        {/* Botão de Ajustes - aparece apenas quando uma banda está selecionada */}
         {selectedBandId && selectedBand && (
           <button
             onClick={() => setShowInviteModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3057F2] hover:bg-[#2545D9] text-white text-sm font-semibold rounded-lg transition-colors"
-            title="Convidar para banda"
+            title="Ajustes da banda"
           >
-            <UserPlus size={16} />
-            <span>Convidar para banda</span>
+            <Settings size={16} />
+            <span>Ajustes</span>
           </button>
         )}
 
@@ -263,26 +287,164 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
         </div>
       )}
 
-      {/* Modal de Convidar Usuários (usando BandManager) */}
+      {/* Modal de Ajustes da Banda */}
       {showInviteModal && selectedBand && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md">
           <div className="bg-[#24272D] border border-[#31333B] rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Gerenciar Banda: {selectedBand.name}</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">Ajustes da Banda</h2>
               <button
-                onClick={() => setShowInviteModal(false)}
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setShowEditModal(false);
+                  setShowDeleteConfirm(false);
+                  setEditBandName('');
+                }}
                 className="p-2 hover:bg-[#1E1F25] rounded-lg transition-colors"
               >
                 <X size={20} className="text-white/60" />
               </button>
             </div>
 
-            <BandManager
-              key={selectedBand.id} // Forçar re-render quando a banda mudar
-              onBandSelect={onBandSelect}
-              selectedBandId={selectedBandId}
-              hideBandSelector={true}
-            />
+            {/* Confirmação de Exclusão - dentro do modal */}
+            {showDeleteConfirm ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+                  <AlertTriangle size={24} className="text-red-500 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-1">Excluir Banda</h3>
+                    <p className="text-sm text-white/70">
+                      Tem certeza que deseja excluir a banda "{selectedBand.name}"? Todos os shows serão mantidos como pessoais e os membros convidados serão redirecionados para suas agendas pessoais. Esta ação não pode ser desfeita.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 px-4 py-3 rounded-xl border border-[#31333B] text-white font-semibold hover:bg-[#1E1F25] transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        await bandService.deleteBand(selectedBand.id);
+                        await loadBands();
+                        onBandSelect(null); // Redirecionar para agenda pessoal
+                        setShowInviteModal(false);
+                        setShowDeleteConfirm(false);
+                        toast.success('Banda excluída com sucesso');
+                      } catch (error: any) {
+                        toast.error(error.message || 'Erro ao excluir banda');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold text-white transition-all active:scale-95 bg-red-600 hover:bg-red-700 shadow-lg shadow-red-600/20 disabled:opacity-50"
+                  >
+                    {loading ? 'Excluindo...' : 'Sim, Excluir'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+
+            {/* Seção de Editar Nome */}
+            <div className="mb-6 p-4 bg-[#1E1F25] border border-[#31333B] rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-white">Nome da Banda</h3>
+                {!showEditModal && (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={loading}
+                    className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 hover:text-red-300 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <Trash2 size={16} />
+                    Excluir Banda
+                  </button>
+                )}
+              </div>
+              
+              {showEditModal ? (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={editBandName}
+                    onChange={(e) => setEditBandName(e.target.value)}
+                    className="w-full px-4 py-2 bg-[#24272D] border border-[#31333B] rounded-lg text-white focus:outline-none focus:border-[#3057F2] transition-colors"
+                    placeholder="Nome da banda"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!editBandName.trim()) {
+                          toast.error('Nome da banda é obrigatório');
+                          return;
+                        }
+                        try {
+                          setLoading(true);
+                          await bandService.updateBand(selectedBand.id, { name: editBandName.trim() });
+                          await loadBands(); // Recarregar lista para atualizar o nome no dropdown
+                          setShowEditModal(false);
+                          toast.success('Nome da banda atualizado!');
+                        } catch (error: any) {
+                          toast.error(error.message || 'Erro ao atualizar nome');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading || !editBandName.trim()}
+                      className="px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-lg font-semibold text-sm transition-colors disabled:opacity-50"
+                    >
+                      {loading ? 'Salvando...' : 'Salvar'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setEditBandName('');
+                      }}
+                      className="px-4 py-2 bg-[#24272D] hover:bg-[#31333B] text-white rounded-lg font-semibold text-sm transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-semibold flex-1">
+                    {bands.find(b => b.id === selectedBand.id)?.name || selectedBand.name}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setEditBandName(selectedBand.name);
+                      setShowEditModal(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-[#24272D] rounded-lg transition-colors"
+                    title="Editar nome da banda"
+                  >
+                    <Pencil size={16} className="text-white/60 hover:text-[#3057F2] transition-colors" />
+                    <span className="text-sm text-white/60 hover:text-[#3057F2] transition-colors">Alterar nome</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Seção de Convidar Membros */}
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-white mb-4">Membros e Convites</h3>
+              <BandManager
+                key={selectedBand.id} // Forçar re-render quando a banda mudar
+                onBandSelect={onBandSelect}
+                selectedBandId={selectedBandId}
+                hideBandSelector={true}
+              />
+            </div>
+              </>
+            )}
           </div>
         </div>
       )}

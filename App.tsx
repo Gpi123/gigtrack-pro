@@ -76,6 +76,34 @@ const App: React.FC = () => {
     }
   }, [selectedBandId, user]);
 
+  // Verificar periodicamente se a banda selecionada ainda existe (para redirecionar outros usuários)
+  useEffect(() => {
+    if (!user || !selectedBandId) return;
+
+    const checkBandExists = async () => {
+      try {
+        const userBands = await bandService.fetchUserBands();
+        const bandExists = userBands.some(b => b.id === selectedBandId);
+        
+        if (!bandExists) {
+          // Banda foi deletada, redirecionar para agenda pessoal
+          setSelectedBandId(null);
+          toast.info('A banda foi excluída. Você foi redirecionado para sua agenda pessoal.');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar banda:', error);
+      }
+    };
+
+    // Verificar imediatamente
+    checkBandExists();
+
+    // Verificar a cada 10 segundos
+    const interval = setInterval(checkBandExists, 10000);
+
+    return () => clearInterval(interval);
+  }, [user, selectedBandId, toast]);
+
   // Função para processar escolha do onboarding
   const handleOnboardingComplete = async (choice: 'personal' | 'band', bandName?: string) => {
     try {

@@ -262,6 +262,34 @@ export const bandService = {
     if (error) throw error;
   },
 
+  // Atualizar banda
+  updateBand: async (bandId: string, updates: { name?: string; description?: string }): Promise<Band> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verificar se é owner
+    const { data: band, error: bandError } = await supabase
+      .from('bands')
+      .select('owner_id')
+      .eq('id', bandId)
+      .single();
+
+    if (bandError) throw bandError;
+    if (band.owner_id !== user.id) {
+      throw new Error('Apenas o dono da banda pode atualizá-la');
+    }
+
+    const { data, error } = await supabase
+      .from('bands')
+      .update(updates)
+      .eq('id', bandId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Deletar banda
   deleteBand: async (bandId: string): Promise<void> => {
     const { error } = await supabase
