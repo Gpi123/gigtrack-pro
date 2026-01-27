@@ -71,16 +71,27 @@ const App: React.FC = () => {
 
   // Recarregar gigs quando mudar o contexto (pessoal/banda)
   useEffect(() => {
-    if (user) {
-      // Desinscrever da subscription anterior antes de recarregar
-      if (subscriptionRef.current) {
-        supabase.removeChannel(subscriptionRef.current).then(() => {
-          subscriptionRef.current = null;
-          loadGigs();
+    if (!user) return;
+    
+    // Evitar recarregamento se já está carregando ou se o bandId não mudou realmente
+    const bandIdChanged = currentBandIdRef.current !== selectedBandId;
+    
+    // Só recarregar se o bandId realmente mudou ou se não há subscription ativa
+    if (bandIdChanged || !subscriptionRef.current) {
+      // Desinscrever da subscription anterior antes de recarregar (apenas se mudou)
+      if (subscriptionRef.current && bandIdChanged) {
+        supabase.removeChannel(subscriptionRef.current).catch(err => {
+          console.warn('⚠️ Erro ao remover channel:', err);
         });
-      } else {
-        loadGigs();
+        subscriptionRef.current = null;
       }
+      
+      // Usar requestAnimationFrame para evitar múltiplas execuções em sequência
+      const rafId = requestAnimationFrame(() => {
+        loadGigs();
+      });
+      
+      return () => cancelAnimationFrame(rafId);
     }
   }, [selectedBandId, user]);
 
@@ -88,8 +99,14 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!user || !selectedBandId) return;
 
+    let isChecking = false;
+    
     const checkBandExists = async () => {
+      // Evitar múltiplas verificações simultâneas
+      if (isChecking) return;
+      
       try {
+        isChecking = true;
         const userBands = await bandService.fetchUserBands();
         const bandExists = userBands.some(b => b.id === selectedBandId);
         
@@ -100,14 +117,16 @@ const App: React.FC = () => {
         }
       } catch (error) {
         console.error('Erro ao verificar banda:', error);
+      } finally {
+        isChecking = false;
       }
     };
 
-    // Verificar imediatamente
+    // Verificar imediatamente apenas uma vez
     checkBandExists();
 
-    // Verificar a cada 10 segundos
-    const interval = setInterval(checkBandExists, 10000);
+    // Verificar a cada 15 segundos (reduzido de 10 para melhor performance)
+    const interval = setInterval(checkBandExists, 15000);
 
     return () => clearInterval(interval);
   }, [user, selectedBandId, toast]);
@@ -176,13 +195,15 @@ const App: React.FC = () => {
           if (token) {
             window.history.replaceState(null, '', window.location.pathname);
           }
-          await loadGigs();
+          // Carregar gigs silenciosamente para não mostrar loading desnecessário
+          await loadGigs(false);
         } else {
           // Verificar se precisa mostrar onboarding (apenas se não houver convite)
           if (profile && !profile.has_completed_onboarding) {
             setShowOnboarding(true);
           } else {
-            await loadGigs();
+            // Carregar gigs apenas uma vez no início
+            await loadGigs(false);
           }
         }
         
@@ -197,8 +218,15 @@ const App: React.FC = () => {
 
     loadUser();
 
-    // Escutar mudanças de autenticação
+    // Escutar mudanças de autenticação (apenas para mudanças reais, não inicialização)
+    let isInitialLoad = true;
     const { data: { subscription } } = authService.onAuthStateChange(async (user) => {
+      // Ignorar a primeira chamada (já tratada em loadUser)
+      if (isInitialLoad) {
+        isInitialLoad = false;
+        return;
+      }
+      
       setUser(user);
       if (user) {
         const profile = await authService.getUserProfile(user.id);
@@ -218,13 +246,13 @@ const App: React.FC = () => {
           if (token) {
             window.history.replaceState(null, '', window.location.pathname);
           }
-          await loadGigs();
+          await loadGigs(false);
         } else {
           // Verificar se precisa mostrar onboarding (apenas se não houver convite)
           if (profile && !profile.has_completed_onboarding) {
             setShowOnboarding(true);
           } else {
-            await loadGigs();
+            await loadGigs(false);
           }
         }
         
@@ -233,6 +261,11 @@ const App: React.FC = () => {
           window.history.replaceState(null, '', window.location.pathname);
         }
       } else {
+        // Limpar subscriptions quando usuário deslogar
+        if (subscriptionRef.current) {
+          supabase.removeChannel(subscriptionRef.current).catch(() => {});
+          subscriptionRef.current = null;
+        }
         setGigs([]);
         setLoading(false);
         setShowOnboarding(false);
@@ -289,23 +322,44 @@ const App: React.FC = () => {
 
   // Ref para armazenar a subscription e evitar múltiplas subscrições
   const subscriptionRef = useRef<any>(null);
+  const loadingRef = useRef<boolean>(false);
+  const currentBandIdRef = useRef<string | null>(null);
 
   const loadGigs = async (silent = false) => {
+    // Evitar múltiplas execuções simultâneas
+    if (loadingRef.current && !silent) {
+      console.log('⏸️ loadGigs já em execução, ignorando chamada duplicada');
+      return;
+    }
+
     try {
+      loadingRef.current = true;
+      
+      // Verificar se o bandId mudou antes de atualizar
+      const bandIdChanged = currentBandIdRef.current !== selectedBandId;
+      const previousBandId = currentBandIdRef.current;
+      currentBandIdRef.current = selectedBandId;
+      
       if (!silent) {
         setLoading(true);
       }
+      
       const data = await gigService.fetchGigs(selectedBandId);
       setGigs(data);
       
-      // Desinscrever da subscription anterior se houver
-      if (subscriptionRef.current) {
-        await supabase.removeChannel(subscriptionRef.current);
+      // Desinscrever da subscription anterior apenas se o bandId mudou
+      if (subscriptionRef.current && bandIdChanged) {
+        try {
+          await supabase.removeChannel(subscriptionRef.current);
+          console.log('🔌 Channel removido devido a mudança de banda');
+        } catch (error) {
+          console.warn('⚠️ Erro ao remover channel anterior:', error);
+        }
         subscriptionRef.current = null;
       }
       
-      // Configurar real-time subscription para o contexto atual (pessoal ou banda)
-      if (!silent) {
+      // Configurar real-time subscription apenas se não existir ou se o contexto mudou
+      if (!silent && (!subscriptionRef.current || bandIdChanged)) {
         subscriptionRef.current = await gigService.subscribeToGigs((updatedGigs) => {
           // Atualizar estado de forma otimizada
           setGigs(prevGigs => {
@@ -347,6 +401,7 @@ const App: React.FC = () => {
         setIsAuthModalOpen(true);
       }
     } finally {
+      loadingRef.current = false;
       if (!silent) {
         setLoading(false);
       }

@@ -261,8 +261,14 @@ export const gigService = {
         console.log(`✅ Subscribed to realtime changes for ${bandId || 'personal'} agenda`);
       } else if (status === 'CHANNEL_ERROR') {
         console.error('❌ Erro na subscription de realtime:', status);
+      } else if (status === 'CLOSED') {
+        console.warn('⚠️ Subscription fechada inesperadamente para', bandId || 'personal');
+        // Não logar CLOSED como info normal, apenas como warning se for inesperado
       } else {
-        console.log('🔄 Subscription status:', status);
+        // Logar outros status apenas em desenvolvimento
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Subscription status:', status);
+        }
       }
     });
 
