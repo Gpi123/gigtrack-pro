@@ -80,16 +80,25 @@ export const gigService = {
     if (error) throw error;
   },
 
-  // Delete all gigs for the current user
-  deleteAllGigs: async (): Promise<void> => {
+  // Delete all gigs for the current user (only personal gigs, not band gigs)
+  deleteAllGigs: async (bandId?: string | null): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { error } = await supabase
+    let query = supabase
       .from('gigs')
       .delete()
       .eq('user_id', user.id);
 
+    if (bandId) {
+      // Se bandId fornecido, deletar apenas shows da banda
+      query = query.eq('band_id', bandId);
+    } else {
+      // Se não fornecido, deletar apenas shows pessoais
+      query = query.is('band_id', null);
+    }
+
+    const { error } = await query;
     if (error) throw error;
   },
 

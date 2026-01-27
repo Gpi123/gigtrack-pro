@@ -6,6 +6,7 @@ export interface UserProfile {
   email: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  has_completed_onboarding?: boolean;
 }
 
 // Helper function to check if supabase is initialized
@@ -95,6 +96,23 @@ export const authService = {
     const { data, error } = await client
       .from('profiles')
       .update(updates)
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Mark onboarding as completed
+  completeOnboarding: async () => {
+    const client = checkSupabase();
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) throw new Error('No user logged in');
+
+    const { data, error } = await client
+      .from('profiles')
+      .update({ has_completed_onboarding: true })
       .eq('id', user.id)
       .select()
       .single();

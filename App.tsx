@@ -19,6 +19,7 @@ import EmptyState from './components/EmptyState';
 import LoadingOverlay from './components/LoadingOverlay';
 import { ToastContainer, useToast } from './components/Toast';
 import AcceptInvite from './components/AcceptInvite';
+import OnboardingModal from './components/OnboardingModal';
 
 const App: React.FC = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
@@ -51,6 +52,7 @@ const App: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid'>('all');
   const [selectedBandId, setSelectedBandId] = useState<string | null>(null);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const toast = useToast();
 
   // Recarregar gigs quando mudar o contexto (pessoal/banda)
@@ -60,24 +62,34 @@ const App: React.FC = () => {
     }
   }, [selectedBandId, user]);
 
-  // Detectar token de convite na URL
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    
-    if (token) {
-      setInviteToken(token);
-      // Limpar token da URL
-      window.history.replaceState(null, '', window.location.pathname);
+  // Função para processar escolha do onboarding
+  const handleOnboardingComplete = async (choice: 'personal' | 'band', bandName?: string) => {
+    try {
+      // Marcar onboarding como completo
+      await authService.completeOnboarding();
+      
+      if (choice === 'band' && bandName) {
+        // Criar uma banda com o nome fornecido
+        const band = await bandService.createBand(bandName.trim());
+        setSelectedBandId(band.id);
+        toast.success(`Banda "${bandName}" criada! Você pode convidar membros agora.`);
+      } else {
+        // Agenda pessoal - apenas marcar como completo
+        setSelectedBandId(null);
+        toast.success('Agenda pessoal configurada!');
+      }
+      
+      // Atualizar perfil
+      const updatedProfile = await authService.getUserProfile(user!.id);
+      setUserProfile(updatedProfile);
+      
+      setShowOnboarding(false);
+      await loadGigs();
+    } catch (error: any) {
+      console.error('Erro ao processar onboarding:', error);
+      toast.error(error.message || 'Erro ao processar escolha');
     }
-    
-    // Verificar se há token pendente no localStorage (após login)
-    const pendingToken = localStorage.getItem('pendingInviteToken');
-    if (pendingToken && !token) {
-      setInviteToken(pendingToken);
-      localStorage.removeItem('pendingInviteToken');
-    }
-  }, []);
+  };
 
   // Carregar dados do Supabase quando usuário estiver autenticado
   useEffect(() => {
@@ -99,17 +111,32 @@ const App: React.FC = () => {
       if (currentUser) {
         const profile = await authService.getUserProfile(currentUser.id);
         setUserProfile(profile);
-        await loadGigs();
         
-        // Se há token pendente, processar convite após login
+        // Verificar se há token de convite na URL (prioridade sobre onboarding)
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
         const pendingToken = localStorage.getItem('pendingInviteToken');
-        if (pendingToken) {
-          setInviteToken(pendingToken);
-          localStorage.removeItem('pendingInviteToken');
+        
+        if (token || pendingToken) {
+          // Se há convite, processar e pular onboarding
+          setInviteToken(token || pendingToken);
+          if (pendingToken) localStorage.removeItem('pendingInviteToken');
+          // Limpar token da URL mas manter no estado
+          if (token) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+          await loadGigs();
+        } else {
+          // Verificar se precisa mostrar onboarding
+          if (profile && !profile.has_completed_onboarding) {
+            setShowOnboarding(true);
+          } else {
+            await loadGigs();
+          }
         }
         
-        // Limpar hash da URL após processar
-        if (accessToken) {
+        // Limpar hash da URL após processar (se não houver token na query)
+        if (accessToken && !token) {
           window.history.replaceState(null, '', window.location.pathname);
         }
       } else {
@@ -125,13 +152,24 @@ const App: React.FC = () => {
       if (user) {
         const profile = await authService.getUserProfile(user.id);
         setUserProfile(profile);
-        await loadGigs();
         
-        // Se há token pendente, processar convite após login
+        // Verificar se há token de convite (prioridade sobre onboarding)
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
         const pendingToken = localStorage.getItem('pendingInviteToken');
-        if (pendingToken) {
-          setInviteToken(pendingToken);
-          localStorage.removeItem('pendingInviteToken');
+        
+        if (token || pendingToken) {
+          // Se há convite, processar e pular onboarding
+          setInviteToken(token || pendingToken);
+          if (pendingToken) localStorage.removeItem('pendingInviteToken');
+          await loadGigs();
+        } else {
+          // Verificar se precisa mostrar onboarding
+          if (profile && !profile.has_completed_onboarding) {
+            setShowOnboarding(true);
+          } else {
+            await loadGigs();
+          }
         }
         
         // Limpar hash da URL após processar
@@ -141,6 +179,7 @@ const App: React.FC = () => {
       } else {
         setGigs([]);
         setLoading(false);
+        setShowOnboarding(false);
       }
     });
 
@@ -336,9 +375,9 @@ const App: React.FC = () => {
   const confirmClearAllGigs = async () => {
     try {
       setIsSyncing(true);
-      await gigService.deleteAllGigs();
+      await gigService.deleteAllGigs(selectedBandId);
       await loadGigs();
-      toast.success('Agenda limpa com sucesso!');
+      toast.success(selectedBandId ? 'Shows da banda limpos com sucesso!' : 'Agenda pessoal limpa com sucesso!');
     } catch (error: any) {
       console.error('Erro ao limpar agenda:', error);
       toast.error(error.message || 'Erro ao limpar agenda');
@@ -989,6 +1028,13 @@ const App: React.FC = () => {
           token={inviteToken}
           onComplete={async (bandId) => {
             setInviteToken(null);
+            // Marcar onboarding como completo se ainda não foi
+            if (userProfile && !userProfile.has_completed_onboarding) {
+              await authService.completeOnboarding();
+              const updatedProfile = await authService.getUserProfile(user!.id);
+              setUserProfile(updatedProfile);
+            }
+            
             // Recarregar bandas primeiro para incluir a nova banda
             if (user) {
               // Aguardar um pouco para garantir que o banco foi atualizado
@@ -1000,6 +1046,14 @@ const App: React.FC = () => {
               }, 500);
             }
           }}
+        />
+      )}
+
+      {/* Modal de Onboarding */}
+      {showOnboarding && user && (
+        <OnboardingModal
+          isOpen={showOnboarding}
+          onComplete={handleOnboardingComplete}
         />
       )}
     </div>
