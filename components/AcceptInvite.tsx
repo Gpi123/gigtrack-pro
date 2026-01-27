@@ -17,7 +17,7 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
 
   useEffect(() => {
     // Evitar processar múltiplas vezes
-    if (processedRef.current) return;
+    if (processedRef.current || status === 'success' || status === 'error') return;
     
     const processInvite = async () => {
       try {
@@ -47,13 +47,15 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
         console.error('Erro ao processar convite:', error);
         processedRef.current = false; // Permitir tentar novamente em caso de erro
         setStatus('error');
-        setErrorMessage(error.message || 'Erro ao processar convite');
-        toast.error(error.message || 'Erro ao processar convite');
+        const errorMsg = error.message || 'Erro ao processar convite';
+        setErrorMessage(errorMsg);
+        toast.error(errorMsg);
       }
     };
 
     processInvite();
-  }, [token, onComplete, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]); // Remover onComplete e toast das dependências para evitar loops
 
   const handleLogin = async () => {
     try {
