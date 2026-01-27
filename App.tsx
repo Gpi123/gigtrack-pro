@@ -824,6 +824,11 @@ const App: React.FC = () => {
                   selectedCalendarDate={selectedCalendarDate}
                 />
                 
+                {/* Divider */}
+                {!isPeriodActive && !selectedCalendarDate && (
+                  <div className="border-t border-[#31333B] my-2" />
+                )}
+                
                 {/* Busca e Filtros */}
                 {!isPeriodActive && !selectedCalendarDate && (
                   <div className="flex flex-col sm:flex-row gap-3 w-full">

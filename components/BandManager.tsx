@@ -8,13 +8,15 @@ import { useToast } from './Toast';
 interface BandManagerProps {
   onBandSelect: (bandId: string | null) => void;
   selectedBandId: string | null;
+  hideBandSelector?: boolean; // Esconder seletor de bandas quando usado em modal de convite
 }
 
-const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId }) => {
+const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId, hideBandSelector = false }) => {
   const [bands, setBands] = useState<Band[]>([]);
   const [members, setMembers] = useState<BandMember[]>([]);
   const [invites, setInvites] = useState<BandInvite[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newBandName, setNewBandName] = useState('');
   const [newBandDescription, setNewBandDescription] = useState('');
@@ -55,9 +57,14 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
 
   useEffect(() => {
     if (selectedBand) {
+      // Sempre recarregar quando selectedBand mudar ou quando usado no modal
       loadBandDetails(selectedBand.id);
+    } else {
+      // Limpar dados quando não há banda selecionada
+      setMembers([]);
+      setInvites([]);
     }
-  }, [selectedBand]);
+  }, [selectedBand?.id, hideBandSelector]); // Recarregar quando banda mudar ou quando entrar no modal
 
   const loadBands = async () => {
     try {
@@ -73,6 +80,7 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
 
   const loadBandDetails = async (bandId: string) => {
     try {
+      setLoadingDetails(true);
       const [membersData, invitesData] = await Promise.all([
         bandService.fetchBandMembers(bandId),
         bandService.fetchBandInvites(bandId)
@@ -81,6 +89,8 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
       setInvites(invitesData);
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar detalhes da banda');
+    } finally {
+      setLoadingDetails(false);
     }
   };
 
@@ -221,51 +231,55 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] flex items-center gap-2">
-          <Users size={14} className="text-white" /> Minhas Bandas
-        </h3>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="p-1.5 hover:bg-[#1E1F25] rounded-lg text-white transition-colors"
-          title="Criar nova banda"
-        >
-          <Plus size={16} />
-        </button>
-      </div>
+      {!hideBandSelector && (
+        <>
+          <div className="flex items-center justify-between">
+            <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] flex items-center gap-2">
+              <Users size={14} className="text-white" /> Minhas Bandas
+            </h3>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="p-1.5 hover:bg-[#1E1F25] rounded-lg text-white transition-colors"
+              title="Criar nova banda"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
 
-      {/* Seletor de contexto */}
-      <div className="bg-[#1E1F25] border border-[#31333B] rounded-xl p-3 space-y-2">
-        <button
-          onClick={() => {
-            onBandSelect(null);
-            setSelectedBand(null);
-          }}
-          className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-            selectedBandId === null
-              ? 'bg-[#3057F2] text-white'
-              : 'bg-[#24272D] text-white hover:bg-[#31333B]'
-          }`}
-        >
-          Minha Agenda Pessoal
-        </button>
-        {bands.map(band => (
-          <button
-            key={band.id}
-            onClick={() => {
-              onBandSelect(band.id);
-              setSelectedBand(band);
-            }}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-              selectedBandId === band.id
-                ? 'bg-[#3057F2] text-white'
-                : 'bg-[#24272D] text-white hover:bg-[#31333B]'
-            }`}
-          >
-            {band.name}
-          </button>
-        ))}
-      </div>
+          {/* Seletor de contexto */}
+          <div className="bg-[#1E1F25] border border-[#31333B] rounded-xl p-3 space-y-2">
+            <button
+              onClick={() => {
+                onBandSelect(null);
+                setSelectedBand(null);
+              }}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                selectedBandId === null
+                  ? 'bg-[#3057F2] text-white'
+                  : 'bg-[#24272D] text-white hover:bg-[#31333B]'
+              }`}
+            >
+              Minha Agenda Pessoal
+            </button>
+            {bands.map(band => (
+              <button
+                key={band.id}
+                onClick={() => {
+                  onBandSelect(band.id);
+                  setSelectedBand(band);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  selectedBandId === band.id
+                    ? 'bg-[#3057F2] text-white'
+                    : 'bg-[#24272D] text-white hover:bg-[#31333B]'
+                }`}
+              >
+                {band.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Detalhes da banda selecionada */}
       {selectedBand && (
@@ -277,13 +291,15 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
                 <p className="text-xs text-white/70 mt-1">{selectedBand.description}</p>
               )}
             </div>
-            <button
-              onClick={handleDeleteBand}
-              className="p-1.5 hover:bg-red-600/20 text-red-400 rounded-lg transition-colors"
-              title="Deletar banda"
-            >
-              <Trash2 size={14} />
-            </button>
+            {!hideBandSelector && (
+              <button
+                onClick={handleDeleteBand}
+                className="p-1.5 hover:bg-red-600/20 text-red-400 rounded-lg transition-colors"
+                title="Deletar banda"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
           </div>
 
           {/* Membros */}
@@ -298,33 +314,73 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId 
                 {loading ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />} Convidar
               </button>
             </div>
-            <div className="space-y-1">
-              {members.map(member => (
-                <div key={member.id} className="flex items-center justify-between p-2 bg-[#24272D] rounded-lg">
-                  <div className="flex items-center gap-2">
-                    {member.profile?.avatar_url ? (
-                      <img src={member.profile.avatar_url} alt="" className="w-6 h-6 rounded-full" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-[#3057F2] flex items-center justify-center text-white text-xs font-bold">
-                        {member.profile?.full_name?.[0] || '?'}
+            {loadingDetails && members.length === 0 ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 size={16} className="animate-spin text-[#3057F2]" />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {members.length === 0 && !loadingDetails ? (
+                  <p className="text-xs text-white/50 text-center py-4">Nenhum membro encontrado</p>
+                ) : (
+                  members.map(member => {
+                    // Determinar nome para exibir - priorizar full_name, depois email, depois "Usuário"
+                    const displayName = member.profile?.full_name || 
+                                      (member.profile?.email ? member.profile.email.split('@')[0] : null) || 
+                                      'Usuário';
+                    
+                    // Determinar inicial para avatar
+                    const initial = member.profile?.full_name?.[0]?.toUpperCase() || 
+                                  member.profile?.email?.[0]?.toUpperCase() || 
+                                  '?';
+                    
+                    return (
+                      <div key={member.id} className="flex items-center justify-between p-2 bg-[#24272D] rounded-lg">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {member.profile?.avatar_url ? (
+                            <img 
+                              src={member.profile.avatar_url} 
+                              alt={displayName}
+                              className="w-6 h-6 rounded-full flex-shrink-0 object-cover" 
+                              onError={(e) => {
+                                // Fallback para avatar com inicial se a imagem falhar
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  const fallback = document.createElement('div');
+                                  fallback.className = 'w-6 h-6 rounded-full bg-[#3057F2] flex items-center justify-center text-white text-xs font-bold flex-shrink-0';
+                                  fallback.textContent = initial;
+                                  parent.insertBefore(fallback, target);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-[#3057F2] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                              {initial}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="text-xs text-white truncate" title={displayName}>
+                              {displayName}
+                            </span>
+                            <span className="text-[10px] text-white/50 uppercase flex-shrink-0">{member.role}</span>
+                          </div>
+                        </div>
+                        {member.role !== 'owner' && !hideBandSelector && (
+                          <button
+                            onClick={() => handleRemoveMember(member.user_id)}
+                            className="p-1 hover:bg-red-600/20 text-red-400 rounded transition-colors flex-shrink-0 ml-2"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
                       </div>
-                    )}
-                    <span className="text-xs text-white">
-                      {member.profile?.full_name || member.profile?.email || 'Usuário'}
-                    </span>
-                    <span className="text-[10px] text-white/50 uppercase">{member.role}</span>
-                  </div>
-                  {member.role !== 'owner' && (
-                    <button
-                      onClick={() => handleRemoveMember(member.user_id)}
-                      className="p-1 hover:bg-red-600/20 text-red-400 rounded transition-colors"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
 
           {/* Convites pendentes */}

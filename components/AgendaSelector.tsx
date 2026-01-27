@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, ChevronDown, Users, User, Plus, UserPlus, X } from 'lucide-react';
+import { LayoutDashboard, ChevronDown, Users, User, Plus, UserPlus, X, Loader2 } from 'lucide-react';
 import { bandService } from '../services/bandService';
 import { Band } from '../types';
 import { useToast } from './Toast';
@@ -93,7 +93,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
 
   return (
     <>
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative flex items-center gap-3" ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-3 text-2xl font-bold text-white hover:opacity-80 transition-opacity"
@@ -105,6 +105,18 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
             className={`text-white/60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           />
         </button>
+
+        {/* Botão de Convidar - aparece apenas quando uma banda está selecionada */}
+        {selectedBandId && selectedBand && (
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3057F2] hover:bg-[#2545D9] text-white text-sm font-semibold rounded-lg transition-colors"
+            title="Convidar para banda"
+          >
+            <UserPlus size={16} />
+            <span>Convidar para banda</span>
+          </button>
+        )}
 
         {isOpen && (
           <div className="absolute top-full left-0 mt-2 w-80 bg-[#24272D] border border-[#31333B] rounded-xl shadow-2xl z-50 overflow-hidden">
@@ -266,8 +278,10 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
             </div>
 
             <BandManager
+              key={selectedBand.id} // Forçar re-render quando a banda mudar
               onBandSelect={onBandSelect}
               selectedBandId={selectedBandId}
+              hideBandSelector={true}
             />
           </div>
         </div>
