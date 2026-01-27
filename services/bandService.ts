@@ -166,39 +166,6 @@ export const bandService = {
       throw new Error(`Erro ao criar convite: ${error.message}. Verifique se você tem permissão.`);
     }
 
-    // Tentar enviar email (não bloqueia se falhar)
-    try {
-      // Buscar nome da banda e do usuário
-      const { data: bandData } = await supabase
-        .from('bands')
-        .select('name')
-        .eq('id', bandId)
-        .single();
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-
-      // Chamar Edge Function para enviar email
-      const { error: emailError } = await supabase.functions.invoke('send-invite-email', {
-        body: {
-          inviteId: data.id,
-          bandName: bandData?.name || 'Banda',
-          inviterName: profileData?.full_name || user.email || 'Um membro'
-        }
-      });
-
-      if (emailError) {
-        console.warn('Erro ao enviar email (convite foi criado):', emailError);
-        // Não falha o processo se o email não for enviado
-      }
-    } catch (emailErr) {
-      console.warn('Erro ao tentar enviar email (convite foi criado):', emailErr);
-      // Não falha o processo se o email não for enviado
-    }
-
     return data;
   },
 
