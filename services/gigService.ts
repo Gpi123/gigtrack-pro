@@ -141,8 +141,6 @@ export const gigService = {
     if (!user) return null;
     
     // Criar filtro baseado no contexto (pessoal ou banda)
-    // Para bandas, escutar todos os eventos da banda
-    // Para pessoal, escutar apenas eventos pessoais do usuário
     const channelName = `gigs_changes_${bandId || 'personal'}_${user.id}_${Date.now()}`;
     
     const channel = supabase
@@ -150,7 +148,6 @@ export const gigService = {
     
     if (bandId) {
       // Para bandas: escutar todos os eventos onde band_id = bandId
-      // Usar formato correto do PostgREST para o filtro
       channel.on(
         'postgres_changes',
         {
@@ -184,71 +181,79 @@ export const gigService = {
         }
       );
     } else {
-      // Para pessoal: escutar TODOS os eventos (pessoais e de bandas)
-      // Isso porque a agenda pessoal mostra tanto eventos pessoais quanto da banda
+      // Para pessoal: escutar eventos pessoais E eventos de bandas do usuário
+      // Buscar bandas do usuário uma vez para criar filtros específicos
+      const userBands = await bandService.fetchUserBands();
+      const userBandIds = userBands.map(b => b.id);
+      
+      // Cache das bandas para uso rápido na verificação
+      const bandIdsSet = new Set(userBandIds);
+      
+      // Escutar eventos pessoais do usuário
       channel.on(
         'postgres_changes',
         {
-          event: '*', // INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
-          table: 'gigs'
+          table: 'gigs',
+          filter: `user_id=eq.${user.id}`
         },
         async (payload) => {
-          console.log('🎵 Realtime event (personal):', payload.eventType, {
-            new: payload.new,
-            old: payload.old
-          });
-          
           const newGig = payload.new as Gig | null;
           const oldGig = payload.old as Gig | null;
           
-          // Verificar se o evento é relevante para a agenda pessoal:
-          // 1. É um evento pessoal do usuário (user_id = user.id AND band_id IS NULL)
-          // 2. É um evento de uma banda onde o usuário é membro
+          // Verificar se é evento pessoal (band_id IS NULL)
+          const isPersonal = (newGig && newGig.band_id === null) || (oldGig && oldGig.band_id === null);
           
-          let isRelevant = false;
-          
-          // Verificar eventos pessoais primeiro (mais rápido, não precisa buscar bandas)
-          if (newGig) {
-            if (newGig.user_id === user.id && newGig.band_id === null) {
-              isRelevant = true;
-            }
-          }
-          
-          if (oldGig) {
-            if (oldGig.user_id === user.id && oldGig.band_id === null) {
-              isRelevant = true;
-            }
-          }
-          
-          // Se não é evento pessoal, verificar se é de uma banda do usuário
-          if (!isRelevant) {
-            const eventBandId = newGig?.band_id || oldGig?.band_id;
-            if (eventBandId) {
-              // Buscar bandas do usuário para verificar se é membro
-              const userBands = await bandService.fetchUserBands();
-              const isMember = userBands.some(band => band.id === eventBandId);
-              if (isMember) {
-                isRelevant = true;
-              }
-            }
-          }
-          
-          if (!isRelevant) {
-            console.log('⚠️ Evento ignorado - não relevante para agenda pessoal');
+          if (!isPersonal) {
+            // Não é evento pessoal, ignorar (será capturado pela subscription de bandas)
             return;
           }
+          
+          console.log('🎵 Realtime event (personal gig):', payload.eventType);
           
           // Recarregar dados atualizados do banco
           try {
             const gigs = await gigService.fetchGigs(null);
-            console.log('✅ Recarregados', gigs.length, 'gigs na agenda pessoal após evento realtime');
+            console.log('✅ Recarregados', gigs.length, 'gigs na agenda pessoal após evento pessoal');
             callback(gigs);
           } catch (error) {
             console.error('❌ Erro ao recarregar gigs após mudança realtime:', error);
           }
         }
       );
+      
+      // Escutar eventos de todas as bandas do usuário
+      // Criar uma subscription para cada banda para melhor performance
+      if (userBandIds.length > 0) {
+        userBandIds.forEach(bandIdToListen => {
+          channel.on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'gigs',
+              filter: `band_id=eq.${bandIdToListen}`
+            },
+            async (payload) => {
+              console.log('🎵 Realtime event (band gig in personal):', payload.eventType, {
+                bandId: bandIdToListen,
+                new: payload.new,
+                old: payload.old
+              });
+              
+              // Recarregar dados atualizados do banco
+              try {
+                const gigs = await gigService.fetchGigs(null);
+                console.log('✅ Recarregados', gigs.length, 'gigs na agenda pessoal após evento de banda');
+                callback(gigs);
+              } catch (error) {
+                console.error('❌ Erro ao recarregar gigs após mudança realtime:', error);
+              }
+            }
+          );
+        });
+      }
     }
     
     channel.subscribe((status) => {

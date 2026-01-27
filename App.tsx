@@ -374,9 +374,22 @@ const App: React.FC = () => {
         toast.success('Show atualizado com sucesso!');
       } else {
         const newGig = await gigService.createGig(gig, selectedBandId);
-        setGigs(prevGigs => [...prevGigs, newGig].sort((a, b) => 
-          a.date.localeCompare(b.date)
-        ));
+        // Atualização otimista: adicionar o novo gig ao estado
+        // A subscription em tempo real vai atualizar automaticamente para todos os membros
+        setGigs(prevGigs => {
+          // Verificar se já não existe (pode ter sido adicionado pela subscription)
+          const exists = prevGigs.some(g => g.id === newGig.id);
+          if (exists) {
+            // Se já existe, atualizar
+            return prevGigs.map(g => g.id === newGig.id ? newGig : g).sort((a, b) => 
+              a.date.localeCompare(b.date)
+            );
+          }
+          // Se não existe, adicionar
+          return [...prevGigs, newGig].sort((a, b) => 
+            a.date.localeCompare(b.date)
+          );
+        });
         toast.success('Show criado com sucesso!');
       }
       setIsModalOpen(false);
