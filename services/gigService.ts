@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Gig, GigStatus } from '../types';
+import { bandService } from './bandService';
 
 export const gigService = {
   // Fetch all gigs for the current user or a specific band
@@ -7,22 +8,48 @@ export const gigService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    let query = supabase
-      .from('gigs')
-      .select('*');
-
     if (bandId) {
-      // Buscar gigs da banda
-      query = query.eq('band_id', bandId);
+      // Buscar apenas gigs da banda específica
+      const { data, error } = await supabase
+        .from('gigs')
+        .select('*')
+        .eq('band_id', bandId)
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
     } else {
-      // Buscar gigs pessoais (band_id IS NULL)
-      query = query.is('band_id', null).eq('user_id', user.id);
+      // Buscar gigs pessoais + gigs de todas as bandas do usuário
+      // 1. Buscar gigs pessoais (band_id IS NULL)
+      const { data: personalGigs, error: personalError } = await supabase
+        .from('gigs')
+        .select('*')
+        .is('band_id', null)
+        .eq('user_id', user.id);
+
+      if (personalError) throw personalError;
+
+      // 2. Buscar todas as bandas do usuário
+      const userBands = await bandService.fetchUserBands();
+      const bandIds = userBands.map(band => band.id);
+
+      // 3. Buscar gigs de todas as bandas do usuário
+      let bandGigs: Gig[] = [];
+      if (bandIds.length > 0) {
+        const { data: bandGigsData, error: bandGigsError } = await supabase
+          .from('gigs')
+          .select('*')
+          .in('band_id', bandIds)
+          .order('date', { ascending: true });
+
+        if (bandGigsError) throw bandGigsError;
+        bandGigs = bandGigsData || [];
+      }
+
+      // 4. Combinar e ordenar
+      const allGigs = [...(personalGigs || []), ...bandGigs];
+      return allGigs.sort((a, b) => a.date.localeCompare(b.date));
     }
-
-    const { data, error } = await query.order('date', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
   },
 
   // Create a new gig
@@ -157,32 +184,68 @@ export const gigService = {
         }
       );
     } else {
-      // Para pessoal: escutar eventos onde user_id = user.id AND band_id IS NULL
+      // Para pessoal: escutar TODOS os eventos (pessoais e de bandas)
+      // Isso porque a agenda pessoal mostra tanto eventos pessoais quanto da banda
       channel.on(
         'postgres_changes',
         {
           event: '*', // INSERT, UPDATE, DELETE
           schema: 'public',
-          table: 'gigs',
-          filter: `user_id=eq.${user.id}`
+          table: 'gigs'
         },
         async (payload) => {
-          console.log('Realtime event (personal):', payload.eventType, payload.new || payload.old);
+          console.log('🎵 Realtime event (personal):', payload.eventType, {
+            new: payload.new,
+            old: payload.old
+          });
           
-          // Filtrar apenas gigs pessoais (band_id IS NULL)
           const newGig = payload.new as Gig | null;
           const oldGig = payload.old as Gig | null;
           
-          // Se é um gig de banda, ignorar
-          if (newGig && newGig.band_id !== null) return;
-          if (oldGig && oldGig.band_id !== null) return;
+          // Verificar se o evento é relevante para a agenda pessoal:
+          // 1. É um evento pessoal do usuário (user_id = user.id AND band_id IS NULL)
+          // 2. É um evento de uma banda onde o usuário é membro
+          
+          let isRelevant = false;
+          
+          // Verificar eventos pessoais primeiro (mais rápido, não precisa buscar bandas)
+          if (newGig) {
+            if (newGig.user_id === user.id && newGig.band_id === null) {
+              isRelevant = true;
+            }
+          }
+          
+          if (oldGig) {
+            if (oldGig.user_id === user.id && oldGig.band_id === null) {
+              isRelevant = true;
+            }
+          }
+          
+          // Se não é evento pessoal, verificar se é de uma banda do usuário
+          if (!isRelevant) {
+            const eventBandId = newGig?.band_id || oldGig?.band_id;
+            if (eventBandId) {
+              // Buscar bandas do usuário para verificar se é membro
+              const userBands = await bandService.fetchUserBands();
+              const isMember = userBands.some(band => band.id === eventBandId);
+              if (isMember) {
+                isRelevant = true;
+              }
+            }
+          }
+          
+          if (!isRelevant) {
+            console.log('⚠️ Evento ignorado - não relevante para agenda pessoal');
+            return;
+          }
           
           // Recarregar dados atualizados do banco
           try {
             const gigs = await gigService.fetchGigs(null);
+            console.log('✅ Recarregados', gigs.length, 'gigs na agenda pessoal após evento realtime');
             callback(gigs);
           } catch (error) {
-            console.error('Erro ao recarregar gigs após mudança realtime:', error);
+            console.error('❌ Erro ao recarregar gigs após mudança realtime:', error);
           }
         }
       );
