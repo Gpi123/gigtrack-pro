@@ -118,24 +118,37 @@ export const gigService = {
       ? `band_id=eq.${bandId}`
       : `user_id=eq.${user.id}.and(band_id.is.null)`;
     
+    const channelName = `gigs_changes_${bandId || 'personal'}_${Date.now()}`;
+    
     const channel = supabase
-      .channel(`gigs_changes_${bandId || 'personal'}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // INSERT, UPDATE, DELETE
           schema: 'public',
           table: 'gigs',
           filter: filter
         },
         async (payload) => {
-          // Só recarregar se realmente necessário (evitar reloads desnecessários)
-          // O callback será chamado apenas quando houver mudanças reais
-          const gigs = await gigService.fetchGigs(bandId);
-          callback(gigs);
+          console.log('Realtime event:', payload.eventType, payload.new || payload.old);
+          
+          // Recarregar dados atualizados do banco
+          try {
+            const gigs = await gigService.fetchGigs(bandId);
+            callback(gigs);
+          } catch (error) {
+            console.error('Erro ao recarregar gigs após mudança realtime:', error);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Subscribed to realtime changes for ${bandId || 'personal'} agenda`);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Erro na subscription de realtime');
+        }
+      });
 
     return channel;
   }

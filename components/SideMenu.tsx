@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { X } from 'lucide-react';
-import BandManager from './BandManager';
 
 interface SideMenuProps {
   isOpen: boolean;
@@ -37,14 +36,10 @@ const SideMenu: React.FC<SideMenuProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-10">
-          {/* Band Manager Section */}
-          <section className="space-y-4">
-            <BandManager 
-              onBandSelect={onBandSelect}
-              selectedBandId={selectedBandId}
-            />
-          </section>
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="text-center text-white/60 text-sm">
+            <p>As opções de bandas foram movidas para o menu "Minha Agenda" no topo da página.</p>
+          </div>
         </div>
 
         <div className="p-8 border-t border-[#31333B] text-center bg-[#1E1F25]">

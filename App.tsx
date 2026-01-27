@@ -20,6 +20,7 @@ import LoadingOverlay from './components/LoadingOverlay';
 import { ToastContainer, useToast } from './components/Toast';
 import AcceptInvite from './components/AcceptInvite';
 import OnboardingModal from './components/OnboardingModal';
+import AgendaSelector from './components/AgendaSelector';
 
 const App: React.FC = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
@@ -50,10 +51,23 @@ const App: React.FC = () => {
   const [importingCount, setImportingCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid'>('all');
-  const [selectedBandId, setSelectedBandId] = useState<string | null>(null);
+  const [selectedBandId, setSelectedBandId] = useState<string | null>(() => {
+    // Carregar do localStorage na inicialização
+    const saved = localStorage.getItem('selectedBandId');
+    return saved && saved !== 'null' ? saved : null;
+  });
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const toast = useToast();
+
+  // Persistir selectedBandId no localStorage sempre que mudar
+  useEffect(() => {
+    if (selectedBandId) {
+      localStorage.setItem('selectedBandId', selectedBandId);
+    } else {
+      localStorage.removeItem('selectedBandId');
+    }
+  }, [selectedBandId]);
 
   // Recarregar gigs quando mudar o contexto (pessoal/banda)
   useEffect(() => {
@@ -257,23 +271,37 @@ const App: React.FC = () => {
       // Configurar real-time subscription para o contexto atual (pessoal ou banda)
       if (!silent) {
         subscriptionRef.current = await gigService.subscribeToGigs((updatedGigs) => {
-          // Atualizar apenas se realmente houver mudanças (evitar loops)
+          // Atualizar estado de forma otimizada
           setGigs(prevGigs => {
-            const prevIds = new Set(prevGigs.map(g => g.id));
-            const newIds = new Set(updatedGigs.map(g => g.id));
+            // Criar mapas para comparação rápida
+            const prevMap = new Map(prevGigs.map(g => [g.id, g]));
+            const newMap = new Map(updatedGigs.map(g => [g.id, g]));
             
-            // Se os IDs são os mesmos, fazer merge otimizado
-            if (prevIds.size === newIds.size && 
-                Array.from(prevIds).every((id: string) => newIds.has(id))) {
-              // Apenas atualizar se houver diferenças
-              const hasChanges = updatedGigs.some(newGig => {
-                const oldGig = prevGigs.find(g => g.id === newGig.id);
-                return !oldGig || JSON.stringify(oldGig) !== JSON.stringify(newGig);
-              });
-              return hasChanges ? updatedGigs : prevGigs;
+            // Verificar se há mudanças reais
+            let hasChanges = false;
+            
+            // Verificar se algum gig foi removido ou adicionado
+            if (prevGigs.length !== updatedGigs.length) {
+              hasChanges = true;
+            } else {
+              // Verificar se algum gig foi modificado
+              for (const [id, newGig] of newMap) {
+                const oldGig = prevMap.get(id);
+                if (!oldGig || 
+                    oldGig.title !== newGig.title ||
+                    oldGig.date !== newGig.date ||
+                    oldGig.status !== newGig.status ||
+                    oldGig.value !== newGig.value ||
+                    oldGig.location !== newGig.location ||
+                    oldGig.band_id !== newGig.band_id) {
+                  hasChanges = true;
+                  break;
+                }
+              }
             }
             
-            return updatedGigs;
+            // Só atualizar se houver mudanças reais
+            return hasChanges ? updatedGigs : prevGigs;
           });
         }, selectedBandId);
       }
@@ -789,10 +817,12 @@ const App: React.FC = () => {
 
             <div className="lg:col-span-8">
               <div className="flex flex-col gap-4 mb-8">
-                <h2 className="text-2xl font-bold flex items-center gap-3 text-white whitespace-nowrap">
-                  <LayoutDashboard size={24} className="text-white flex-shrink-0" />
-                  <span className="whitespace-nowrap">{isPeriodActive ? 'Filtro de Período' : (selectedCalendarDate ? 'Data Selecionada' : 'Minha Agenda')}</span>
-                </h2>
+                <AgendaSelector
+                  selectedBandId={selectedBandId}
+                  onBandSelect={setSelectedBandId}
+                  isPeriodActive={isPeriodActive}
+                  selectedCalendarDate={selectedCalendarDate}
+                />
                 
                 {/* Busca e Filtros */}
                 {!isPeriodActive && !selectedCalendarDate && (
