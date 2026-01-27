@@ -10,13 +10,19 @@ interface AgendaSelectorProps {
   onBandSelect: (bandId: string | null) => void;
   isPeriodActive: boolean;
   selectedCalendarDate: string | null;
+  selectedBandName?: string | null; // Nome da banda para exibição instantânea
+  isSwitching?: boolean; // Indicador de transição
+  onBandsCacheUpdate?: () => void; // Callback para atualizar cache no App
 }
 
 const AgendaSelector: React.FC<AgendaSelectorProps> = ({
   selectedBandId,
   onBandSelect,
   isPeriodActive,
-  selectedCalendarDate
+  selectedCalendarDate,
+  selectedBandName,
+  isSwitching = false,
+  onBandsCacheUpdate
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [bands, setBands] = useState<Band[]>([]);
@@ -91,6 +97,10 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
       setLoading(true);
       const band = await bandService.createBand(newBandName.trim());
       await loadBands(); // Recarregar lista completa de bandas
+      // Atualizar cache no App
+      if (onBandsCacheUpdate) {
+        onBandsCacheUpdate();
+      }
       setShowCreateModal(false);
       setNewBandName('');
       onBandSelect(band.id);
@@ -107,6 +117,11 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
     if (isPeriodActive) return 'Filtro de Período';
     if (selectedCalendarDate) return 'Data Selecionada';
     if (selectedBandId) {
+      // Priorizar o nome passado como prop (cache) para exibição instantânea
+      if (selectedBandName) {
+        return selectedBandName;
+      }
+      // Fallback para buscar no array local
       const band = bands.find(b => b.id === selectedBandId);
       return band ? band.name : 'Banda';
     }
@@ -120,10 +135,13 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
       <div className="relative flex items-center gap-3" ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 text-2xl font-bold text-white hover:opacity-80 transition-opacity"
+          className="flex items-center gap-3 text-2xl font-bold text-white hover:opacity-80 transition-opacity relative"
         >
           <LayoutDashboard size={24} className="text-white flex-shrink-0" />
           <span className="whitespace-nowrap">{getCurrentAgendaName()}</span>
+          {isSwitching && (
+            <Loader2 size={16} className="text-[#3057F2] animate-spin ml-2" />
+          )}
           <ChevronDown 
             size={20} 
             className={`text-white/60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -332,6 +350,10 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                         setLoading(true);
                         await bandService.deleteBand(selectedBand.id);
                         await loadBands();
+                        // Atualizar cache no App
+                        if (onBandsCacheUpdate) {
+                          onBandsCacheUpdate();
+                        }
                         onBandSelect(null); // Redirecionar para agenda pessoal
                         setShowInviteModal(false);
                         setShowDeleteConfirm(false);
@@ -389,6 +411,10 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                           setLoading(true);
                           await bandService.updateBand(selectedBand.id, { name: editBandName.trim() });
                           await loadBands(); // Recarregar lista para atualizar o nome no dropdown
+                          // Atualizar cache no App
+                          if (onBandsCacheUpdate) {
+                            onBandsCacheUpdate();
+                          }
                           setShowEditModal(false);
                           toast.success('Nome da banda atualizado!');
                         } catch (error: any) {

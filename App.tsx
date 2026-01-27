@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Plus, LayoutDashboard, Calendar, DollarSign, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload, Trash2, Search, Filter } from 'lucide-react';
-import { Gig, GigStatus, FinancialStats } from './types';
+import { Gig, GigStatus, FinancialStats, Band } from './types';
 import { gigService } from './services/gigService';
 import { importService } from './services/importService';
 import { authService, UserProfile } from './services/authService';
@@ -58,6 +58,8 @@ const App: React.FC = () => {
   });
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [bandsCache, setBandsCache] = useState<Band[]>([]);
+  const [isSwitchingAgenda, setIsSwitchingAgenda] = useState(false);
   const toast = useToast();
 
   // Persistir selectedBandId no localStorage sempre que mudar
@@ -69,6 +71,26 @@ const App: React.FC = () => {
     }
   }, [selectedBandId]);
 
+  // Função para atualizar o cache de bandas
+  const refreshBandsCache = useCallback(async () => {
+    if (!user) {
+      setBandsCache([]);
+      return;
+    }
+
+    try {
+      const userBands = await bandService.fetchUserBands();
+      setBandsCache(userBands);
+    } catch (error) {
+      console.error('Erro ao carregar bandas para cache:', error);
+    }
+  }, [user]);
+
+  // Carregar e cachear bandas quando usuário estiver autenticado
+  useEffect(() => {
+    refreshBandsCache();
+  }, [user]);
+
   // Recarregar gigs quando mudar o contexto (pessoal/banda)
   useEffect(() => {
     if (!user) return;
@@ -76,23 +98,38 @@ const App: React.FC = () => {
     // Evitar recarregamento se já está carregando ou se o bandId não mudou realmente
     const bandIdChanged = currentBandIdRef.current !== selectedBandId;
     
-    // Só recarregar se o bandId realmente mudou ou se não há subscription ativa
-    if (bandIdChanged || !subscriptionRef.current) {
-      // Desinscrever da subscription anterior antes de recarregar (apenas se mudou)
-      if (subscriptionRef.current && bandIdChanged) {
-        supabase.removeChannel(subscriptionRef.current).catch(err => {
-          console.warn('⚠️ Erro ao remover channel:', err);
-        });
-        subscriptionRef.current = null;
-      }
-      
-      // Usar requestAnimationFrame para evitar múltiplas execuções em sequência
-      const rafId = requestAnimationFrame(() => {
-        loadGigs();
-      });
-      
-      return () => cancelAnimationFrame(rafId);
+    // Se não mudou e já tem subscription, não fazer nada
+    if (!bandIdChanged && subscriptionRef.current) {
+      return;
     }
+    
+    // Se já está carregando, aguardar
+    if (loadingRef.current) {
+      console.log('⏸️ loadGigs já em execução, aguardando...');
+      return;
+    }
+    
+    // Mostrar indicador de transição apenas se realmente mudou
+    if (bandIdChanged) {
+      setIsSwitchingAgenda(true);
+    }
+    
+    // Desinscrever da subscription anterior antes de recarregar (apenas se mudou)
+    if (subscriptionRef.current && bandIdChanged) {
+      supabase.removeChannel(subscriptionRef.current).catch(err => {
+        console.warn('⚠️ Erro ao remover channel:', err);
+      });
+      subscriptionRef.current = null;
+    }
+    
+    // Usar um pequeno timeout para debounce e evitar múltiplas execuções
+    const timeoutId = setTimeout(() => {
+      loadGigs();
+    }, 50);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [selectedBandId, user]);
 
   // Verificar periodicamente se a banda selecionada ainda existe (para redirecionar outros usuários)
@@ -107,6 +144,9 @@ const App: React.FC = () => {
       
       try {
         isChecking = true;
+        // Atualizar cache e verificar
+        await refreshBandsCache();
+        // Buscar bandas atualizadas diretamente
         const userBands = await bandService.fetchUserBands();
         const bandExists = userBands.some(b => b.id === selectedBandId);
         
@@ -140,6 +180,8 @@ const App: React.FC = () => {
       if (choice === 'band' && bandName) {
         // Criar uma banda com o nome fornecido
         const band = await bandService.createBand(bandName.trim());
+        // Atualizar cache de bandas
+        await refreshBandsCache();
         setSelectedBandId(band.id);
         toast.success(`Banda "${bandName}" criada! Você pode convidar membros agora.`);
       } else {
@@ -327,8 +369,10 @@ const App: React.FC = () => {
 
   const loadGigs = async (silent = false) => {
     // Evitar múltiplas execuções simultâneas
-    if (loadingRef.current && !silent) {
-      console.log('⏸️ loadGigs já em execução, ignorando chamada duplicada');
+    if (loadingRef.current) {
+      if (!silent) {
+        console.log('⏸️ loadGigs já em execução, ignorando chamada duplicada');
+      }
       return;
     }
 
@@ -405,6 +449,8 @@ const App: React.FC = () => {
       if (!silent) {
         setLoading(false);
       }
+      // Remover indicador de transição após um pequeno delay para garantir que a UI atualizou
+      setTimeout(() => setIsSwitchingAgenda(false), 100);
     }
   };
 
@@ -914,6 +960,9 @@ const App: React.FC = () => {
                       onBandSelect={setSelectedBandId}
                       isPeriodActive={isPeriodActive}
                       selectedCalendarDate={selectedCalendarDate}
+                      selectedBandName={selectedBandId ? bandsCache.find(b => b.id === selectedBandId)?.name : null}
+                      isSwitching={isSwitchingAgenda}
+                      onBandsCacheUpdate={refreshBandsCache}
                     />
                   </div>
                   {!isPeriodActive && !selectedCalendarDate && (
@@ -1193,6 +1242,8 @@ const App: React.FC = () => {
             
             // Recarregar bandas primeiro para incluir a nova banda
             if (user) {
+              // Atualizar cache de bandas
+              await refreshBandsCache();
               // Aguardar um pouco para garantir que o banco foi atualizado
               setTimeout(async () => {
                 // Selecionar automaticamente a banda após aceitar convite
