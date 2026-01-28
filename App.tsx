@@ -72,7 +72,7 @@ const App: React.FC = () => {
   }, [selectedBandId]);
 
   // Função para atualizar o cache de bandas
-  const refreshBandsCache = useCallback(async () => {
+  const refreshBandsCache = useCallback(async (forceRefresh = false) => {
     if (!user) {
       setBandsCache([]);
       return;
@@ -80,19 +80,26 @@ const App: React.FC = () => {
 
     try {
       // Usar cache de bandas para evitar múltiplas chamadas
-      const { getCachedUserBands, invalidateBandsCache } = await import('./services/bandsCache');
-      invalidateBandsCache(); // Invalidar para forçar refresh
-      const userBands = await getCachedUserBands(user.id);
+      const { getCachedUserBands } = await import('./services/bandsCache');
+      // Não invalidar automaticamente - deixar o cache funcionar
+      const userBands = await getCachedUserBands(user.id, forceRefresh);
       setBandsCache(userBands);
     } catch (error) {
       console.error('Erro ao carregar bandas para cache:', error);
     }
   }, [user]);
 
-  // Carregar e cachear bandas quando usuário estiver autenticado
+  // Carregar e cachear bandas quando usuário estiver autenticado (apenas uma vez)
+  const hasLoadedBands = useRef(false);
   useEffect(() => {
-    refreshBandsCache();
-  }, [user]);
+    if (user && !hasLoadedBands.current) {
+      hasLoadedBands.current = true;
+      refreshBandsCache(false); // Não forçar refresh na primeira carga
+    } else if (!user) {
+      hasLoadedBands.current = false;
+      setBandsCache([]);
+    }
+  }, [user, refreshBandsCache]);
 
   // Recarregar gigs quando mudar o contexto (pessoal/banda)
   useEffect(() => {
@@ -171,38 +178,54 @@ const App: React.FC = () => {
     if (!user || !selectedBandId) return;
 
     let isChecking = false;
+    let intervalId: NodeJS.Timeout | null = null;
     
     const checkBandExists = async () => {
       // Evitar múltiplas verificações simultâneas
-      if (isChecking) return;
+      if (isChecking) {
+        console.log('⏸️ [PERF] checkBandExists já em execução, ignorando');
+        return;
+      }
       
       try {
         isChecking = true;
-        // Atualizar cache e verificar
-        await refreshBandsCache();
-        // Buscar bandas atualizadas diretamente
-        const userBands = await bandService.fetchUserBands();
+        // Usar cache de bandas (não forçar refresh para evitar loops)
+        const { getCachedUserBands } = await import('./services/bandsCache');
+        const userBands = await getCachedUserBands(user.id, false);
         const bandExists = userBands.some(b => b.id === selectedBandId);
         
         if (!bandExists) {
           // Banda foi deletada, redirecionar para agenda pessoal
+          console.log('⚠️ [PERF] Banda não encontrada, redirecionando para agenda pessoal');
           setSelectedBandId(null);
           toast.info('A banda foi excluída. Você foi redirecionado para sua agenda pessoal.');
+          // Limpar intervalo se banda não existe mais
+          if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
         }
       } catch (error) {
-        console.error('Erro ao verificar banda:', error);
+        console.error('❌ [PERF] Erro ao verificar banda:', error);
       } finally {
         isChecking = false;
       }
     };
 
-    // Verificar imediatamente apenas uma vez
-    checkBandExists();
+    // Verificar imediatamente apenas uma vez (com delay para evitar conflito com loadGigs)
+    const initialTimeout = setTimeout(() => {
+      checkBandExists();
+    }, 2000); // Aguardar 2s após mudança de banda
 
-    // Verificar a cada 15 segundos (reduzido de 10 para melhor performance)
-    const interval = setInterval(checkBandExists, 15000);
+    // Verificar a cada 30 segundos (aumentado para reduzir carga)
+    intervalId = setInterval(checkBandExists, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimeout);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, [user, selectedBandId, toast]);
 
   // Função para processar escolha do onboarding
@@ -214,8 +237,8 @@ const App: React.FC = () => {
       if (choice === 'band' && bandName) {
         // Criar uma banda com o nome fornecido
         const band = await bandService.createBand(bandName.trim());
-        // Atualizar cache de bandas
-        await refreshBandsCache();
+        // Atualizar cache de bandas (forçar refresh após criar banda)
+        await refreshBandsCache(true);
         setSelectedBandId(band.id);
         toast.success(`Banda "${bandName}" criada! Você pode convidar membros agora.`);
       } else {
@@ -1041,7 +1064,7 @@ const App: React.FC = () => {
                       selectedCalendarDate={selectedCalendarDate}
                       selectedBandName={selectedBandId ? bandsCache.find(b => b.id === selectedBandId)?.name : null}
                       isSwitching={isSwitchingAgenda}
-                      onBandsCacheUpdate={refreshBandsCache}
+                      onBandsCacheUpdate={(forceRefresh) => refreshBandsCache(forceRefresh || false)}
                     />
                   </div>
                   {!isPeriodActive && !selectedCalendarDate && (
@@ -1321,8 +1344,8 @@ const App: React.FC = () => {
             
             // Recarregar bandas primeiro para incluir a nova banda
             if (user) {
-              // Atualizar cache de bandas
-              await refreshBandsCache();
+              // Atualizar cache de bandas (forçar refresh após aceitar convite)
+              await refreshBandsCache(true);
               // Aguardar um pouco para garantir que o banco foi atualizado
               setTimeout(async () => {
                 // Selecionar automaticamente a banda após aceitar convite

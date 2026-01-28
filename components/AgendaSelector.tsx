@@ -13,7 +13,7 @@ interface AgendaSelectorProps {
   selectedCalendarDate: string | null;
   selectedBandName?: string | null; // Nome da banda para exibição instantânea
   isSwitching?: boolean; // Indicador de transição
-  onBandsCacheUpdate?: () => void; // Callback para atualizar cache no App
+  onBandsCacheUpdate?: (forceRefresh?: boolean) => void; // Callback para atualizar cache no App
 }
 
 const AgendaSelector: React.FC<AgendaSelectorProps> = ({
@@ -141,9 +141,9 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
       setLoading(true);
       const band = await bandService.createBand(newBandName.trim());
       await loadBands(); // Recarregar lista completa de bandas
-      // Atualizar cache no App
+      // Atualizar cache no App (forçar refresh após criar banda)
       if (onBandsCacheUpdate) {
-        onBandsCacheUpdate();
+        onBandsCacheUpdate(true); // forceRefresh = true
       }
       setShowCreateModal(false);
       setNewBandName('');
@@ -394,9 +394,9 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                         setLoading(true);
                         await bandService.deleteBand(selectedBand.id);
                         await loadBands();
-                        // Atualizar cache no App
+                        // Atualizar cache no App (forçar refresh após deletar banda)
                         if (onBandsCacheUpdate) {
-                          onBandsCacheUpdate();
+                          onBandsCacheUpdate(true);
                         }
                         onBandSelect(null); // Redirecionar para agenda pessoal
                         setShowInviteModal(false);
@@ -455,9 +455,9 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                           setLoading(true);
                           await bandService.updateBand(selectedBand.id, { name: editBandName.trim() });
                           await loadBands(); // Recarregar lista para atualizar o nome no dropdown
-                          // Atualizar cache no App
+                          // Atualizar cache no App (forçar refresh após editar banda)
                           if (onBandsCacheUpdate) {
-                            onBandsCacheUpdate();
+                            onBandsCacheUpdate(true);
                           }
                           setShowEditModal(false);
                           toast.success('Nome da banda atualizado!');
