@@ -33,27 +33,55 @@ export const bandService = {
 
   // Buscar todas as bandas do usuário
   fetchUserBands: async (): Promise<Band[]> => {
+    const startTime = performance.now();
+    console.log(`🔍 [PERF] fetchUserBands INICIADO`, {
+      timestamp: new Date().toISOString()
+    });
+
+    const authStart = performance.now();
     const { data: { user } } = await supabase.auth.getUser();
+    const authTime = performance.now() - authStart;
+    console.log(`🔐 [PERF] fetchUserBands - Auth.getUser() - ${authTime.toFixed(2)}ms`);
+
     if (!user) throw new Error('User not authenticated');
 
     // Buscar bandas onde o usuário é owner
+    const query1Start = performance.now();
     const { data: ownedBands, error: ownedError } = await supabase
       .from('bands')
       .select('*')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
+    const query1Time = performance.now() - query1Start;
+    
+    console.log(`📊 [PERF] fetchUserBands - Query bandas próprias - ${query1Time.toFixed(2)}ms`, {
+      count: ownedBands?.length || 0
+    });
 
-    if (ownedError) throw ownedError;
+    if (ownedError) {
+      console.error(`❌ [PERF] Erro ao buscar bandas próprias:`, ownedError);
+      throw ownedError;
+    }
 
     // Buscar bandas onde o usuário é membro
+    const query2Start = performance.now();
     const { data: memberBands, error: memberError } = await supabase
       .from('band_members')
       .select('band_id, bands(*)')
       .eq('user_id', user.id);
+    const query2Time = performance.now() - query2Start;
+    
+    console.log(`📊 [PERF] fetchUserBands - Query bandas como membro - ${query2Time.toFixed(2)}ms`, {
+      count: memberBands?.length || 0
+    });
 
-    if (memberError) throw memberError;
+    if (memberError) {
+      console.error(`❌ [PERF] Erro ao buscar bandas como membro:`, memberError);
+      throw memberError;
+    }
 
     // Combinar e remover duplicatas
+    const combineStart = performance.now();
     const allBands: Band[] = [];
     const bandIds = new Set<string>();
 
@@ -78,9 +106,28 @@ export const bandService = {
     }
 
     // Ordenar por created_at
-    return allBands.sort((a, b) => 
+    const sortedBands = allBands.sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
+    const combineTime = performance.now() - combineStart;
+    
+    const totalTime = performance.now() - startTime;
+    console.log(`✅ [PERF] fetchUserBands CONCLUÍDO - Total: ${totalTime.toFixed(2)}ms`, {
+      breakdown: {
+        auth: `${authTime.toFixed(2)}ms`,
+        query1_owned: `${query1Time.toFixed(2)}ms`,
+        query2_member: `${query2Time.toFixed(2)}ms`,
+        combine: `${combineTime.toFixed(2)}ms`,
+        total: `${totalTime.toFixed(2)}ms`
+      },
+      counts: {
+        owned: ownedBands?.length || 0,
+        member: memberBands?.length || 0,
+        total: sortedBands.length
+      }
+    });
+
+    return sortedBands;
   },
 
   // Buscar membros de uma banda

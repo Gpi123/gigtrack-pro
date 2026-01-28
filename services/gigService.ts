@@ -5,50 +5,136 @@ import { bandService } from './bandService';
 export const gigService = {
   // Fetch all gigs for the current user or a specific band
   fetchGigs: async (bandId?: string | null): Promise<Gig[]> => {
+    const startTime = performance.now();
+    console.log(`🔍 [PERF] fetchGigs INICIADO - bandId: ${bandId || 'null (pessoal)'}`, {
+      timestamp: new Date().toISOString()
+    });
+
+    const authStart = performance.now();
     const { data: { user } } = await supabase.auth.getUser();
+    const authTime = performance.now() - authStart;
+    console.log(`🔐 [PERF] Auth.getUser() - ${authTime.toFixed(2)}ms`);
+
     if (!user) throw new Error('User not authenticated');
 
     if (bandId) {
       // Buscar apenas gigs da banda específica
+      const queryStart = performance.now();
       const { data, error } = await supabase
         .from('gigs')
         .select('*')
         .eq('band_id', bandId)
         .order('date', { ascending: true });
+      const queryTime = performance.now() - queryStart;
+      
+      console.log(`📊 [PERF] Query gigs por banda - ${queryTime.toFixed(2)}ms`, {
+        bandId,
+        count: data?.length || 0,
+        queryTime: `${queryTime.toFixed(2)}ms`
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error(`❌ [PERF] Erro na query de gigs por banda:`, error);
+        throw error;
+      }
+
+      const totalTime = performance.now() - startTime;
+      console.log(`✅ [PERF] fetchGigs CONCLUÍDO (banda) - Total: ${totalTime.toFixed(2)}ms`, {
+        bandId,
+        count: data?.length || 0,
+        breakdown: {
+          auth: `${authTime.toFixed(2)}ms`,
+          query: `${queryTime.toFixed(2)}ms`,
+          total: `${totalTime.toFixed(2)}ms`
+        }
+      });
+
       return data || [];
     } else {
       // Buscar gigs pessoais + gigs de todas as bandas do usuário
+      const step1Start = performance.now();
       // 1. Buscar gigs pessoais (band_id IS NULL)
       const { data: personalGigs, error: personalError } = await supabase
         .from('gigs')
         .select('*')
         .is('band_id', null)
         .eq('user_id', user.id);
+      const step1Time = performance.now() - step1Start;
+      
+      console.log(`📊 [PERF] Step 1 - Query gigs pessoais - ${step1Time.toFixed(2)}ms`, {
+        count: personalGigs?.length || 0
+      });
 
-      if (personalError) throw personalError;
+      if (personalError) {
+        console.error(`❌ [PERF] Erro na query de gigs pessoais:`, personalError);
+        throw personalError;
+      }
 
       // 2. Buscar todas as bandas do usuário
+      const step2Start = performance.now();
       const userBands = await bandService.fetchUserBands();
+      const step2Time = performance.now() - step2Start;
       const bandIds = userBands.map(band => band.id);
+      
+      console.log(`👥 [PERF] Step 2 - fetchUserBands - ${step2Time.toFixed(2)}ms`, {
+        bandsCount: userBands.length,
+        bandIds: bandIds.length
+      });
 
       // 3. Buscar gigs de todas as bandas do usuário
       let bandGigs: Gig[] = [];
+      let step3Time = 0;
       if (bandIds.length > 0) {
+        const step3Start = performance.now();
         const { data: bandGigsData, error: bandGigsError } = await supabase
           .from('gigs')
           .select('*')
           .in('band_id', bandIds)
           .order('date', { ascending: true });
+        step3Time = performance.now() - step3Start;
+        
+        console.log(`📊 [PERF] Step 3 - Query gigs de bandas - ${step3Time.toFixed(2)}ms`, {
+          bandIdsCount: bandIds.length,
+          count: bandGigsData?.length || 0
+        });
 
-        if (bandGigsError) throw bandGigsError;
+        if (bandGigsError) {
+          console.error(`❌ [PERF] Erro na query de gigs de bandas:`, bandGigsError);
+          throw bandGigsError;
+        }
         bandGigs = bandGigsData || [];
+      } else {
+        console.log(`📊 [PERF] Step 3 - Pulado (sem bandas)`);
       }
 
       // 4. Combinar e ordenar
+      const step4Start = performance.now();
       const allGigs = [...(personalGigs || []), ...bandGigs];
-      return allGigs.sort((a, b) => a.date.localeCompare(b.date));
+      const sortedGigs = allGigs.sort((a, b) => a.date.localeCompare(b.date));
+      const step4Time = performance.now() - step4Start;
+      
+      console.log(`🔄 [PERF] Step 4 - Combinar e ordenar - ${step4Time.toFixed(2)}ms`, {
+        totalCount: sortedGigs.length
+      });
+
+      const totalTime = performance.now() - startTime;
+      console.log(`✅ [PERF] fetchGigs CONCLUÍDO (pessoal) - Total: ${totalTime.toFixed(2)}ms`, {
+        breakdown: {
+          auth: `${authTime.toFixed(2)}ms`,
+          step1_personal: `${step1Time.toFixed(2)}ms`,
+          step2_bands: `${step2Time.toFixed(2)}ms`,
+          step3_bandGigs: `${step3Time.toFixed(2)}ms`,
+          step4_sort: `${step4Time.toFixed(2)}ms`,
+          total: `${totalTime.toFixed(2)}ms`
+        },
+        counts: {
+          personal: personalGigs?.length || 0,
+          band: bandGigs.length,
+          total: sortedGigs.length
+        }
+      });
+
+      return sortedGigs;
     }
   },
 

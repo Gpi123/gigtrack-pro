@@ -93,42 +93,73 @@ const App: React.FC = () => {
 
   // Recarregar gigs quando mudar o contexto (pessoal/banda)
   useEffect(() => {
-    if (!user) return;
+    const effectStart = performance.now();
+    console.log(`🔄 [PERF] useEffect [selectedBandId, user] DISPARADO`, {
+      user: !!user,
+      selectedBandId,
+      currentBandIdRef: currentBandIdRef.current,
+      timestamp: new Date().toISOString()
+    });
+
+    if (!user) {
+      console.log(`⏸️ [PERF] useEffect - Sem usuário, retornando`);
+      return;
+    }
     
     // Evitar recarregamento se já está carregando ou se o bandId não mudou realmente
     const bandIdChanged = currentBandIdRef.current !== selectedBandId;
     
+    console.log(`🔍 [PERF] useEffect - Verificações:`, {
+      bandIdChanged,
+      hasSubscription: !!subscriptionRef.current,
+      isLoading: loadingRef.current
+    });
+    
     // Se não mudou e já tem subscription, não fazer nada
     if (!bandIdChanged && subscriptionRef.current) {
+      const effectTime = performance.now() - effectStart;
+      console.log(`⏸️ [PERF] useEffect - Sem mudanças, retornando - ${effectTime.toFixed(2)}ms`);
       return;
     }
     
     // Se já está carregando, aguardar
     if (loadingRef.current) {
-      console.log('⏸️ loadGigs já em execução, aguardando...');
+      console.log('⏸️ [PERF] useEffect - loadGigs já em execução, aguardando...');
       return;
     }
     
     // Mostrar indicador de transição apenas se realmente mudou
     if (bandIdChanged) {
+      const setSwitchingStart = performance.now();
       setIsSwitchingAgenda(true);
+      console.log(`🔄 [PERF] setIsSwitchingAgenda(true) - ${(performance.now() - setSwitchingStart).toFixed(2)}ms`);
     }
     
     // Desinscrever da subscription anterior antes de recarregar (apenas se mudou)
     if (subscriptionRef.current && bandIdChanged) {
+      const removeStart = performance.now();
       supabase.removeChannel(subscriptionRef.current).catch(err => {
-        console.warn('⚠️ Erro ao remover channel:', err);
+        console.warn('⚠️ [PERF] Erro ao remover channel:', err);
       });
       subscriptionRef.current = null;
+      console.log(`🔌 [PERF] Channel removido no useEffect - ${(performance.now() - removeStart).toFixed(2)}ms`);
     }
     
     // Usar um pequeno timeout para debounce e evitar múltiplas execuções
     const timeoutId = setTimeout(() => {
+      const timeoutStart = performance.now();
+      console.log(`⏱️ [PERF] Timeout disparado após 50ms`);
       loadGigs();
+      console.log(`⏱️ [PERF] loadGigs chamado do timeout - ${(performance.now() - timeoutStart).toFixed(2)}ms`);
     }, 50);
+    
+    const effectTime = performance.now() - effectStart;
+    console.log(`✅ [PERF] useEffect configurado - ${effectTime.toFixed(2)}ms`);
     
     return () => {
       clearTimeout(timeoutId);
+      const cleanupTime = performance.now() - effectStart;
+      console.log(`🧹 [PERF] useEffect cleanup - ${cleanupTime.toFixed(2)}ms`);
     };
   }, [selectedBandId, user]);
 
@@ -368,10 +399,18 @@ const App: React.FC = () => {
   const currentBandIdRef = useRef<string | null>(null);
 
   const loadGigs = async (silent = false) => {
+    const loadGigsStart = performance.now();
+    console.log(`🚀 [PERF] loadGigs INICIADO`, {
+      silent,
+      selectedBandId,
+      previousBandId: currentBandIdRef.current,
+      timestamp: new Date().toISOString()
+    });
+
     // Evitar múltiplas execuções simultâneas
     if (loadingRef.current) {
       if (!silent) {
-        console.log('⏸️ loadGigs já em execução, ignorando chamada duplicada');
+        console.log('⏸️ [PERF] loadGigs já em execução, ignorando chamada duplicada');
       }
       return;
     }
@@ -384,26 +423,47 @@ const App: React.FC = () => {
       const previousBandId = currentBandIdRef.current;
       currentBandIdRef.current = selectedBandId;
       
+      console.log(`🔄 [PERF] loadGigs - Mudança detectada:`, {
+        bandIdChanged,
+        previous: previousBandId,
+        current: selectedBandId
+      });
+      
       if (!silent) {
+        const setLoadingStart = performance.now();
         setLoading(true);
+        console.log(`⚡ [PERF] setLoading(true) - ${(performance.now() - setLoadingStart).toFixed(2)}ms`);
       }
       
+      const fetchStart = performance.now();
       const data = await gigService.fetchGigs(selectedBandId);
+      const fetchTime = performance.now() - fetchStart;
+      
+      console.log(`📦 [PERF] fetchGigs retornou - ${fetchTime.toFixed(2)}ms`, {
+        count: data.length
+      });
+      
+      const setGigsStart = performance.now();
       setGigs(data);
+      const setGigsTime = performance.now() - setGigsStart;
+      console.log(`💾 [PERF] setGigs() - ${setGigsTime.toFixed(2)}ms`);
       
       // Desinscrever da subscription anterior apenas se o bandId mudou
       if (subscriptionRef.current && bandIdChanged) {
+        const unsubscribeStart = performance.now();
         try {
           await supabase.removeChannel(subscriptionRef.current);
-          console.log('🔌 Channel removido devido a mudança de banda');
+          const unsubscribeTime = performance.now() - unsubscribeStart;
+          console.log(`🔌 [PERF] Channel removido - ${unsubscribeTime.toFixed(2)}ms`);
         } catch (error) {
-          console.warn('⚠️ Erro ao remover channel anterior:', error);
+          console.warn('⚠️ [PERF] Erro ao remover channel anterior:', error);
         }
         subscriptionRef.current = null;
       }
       
       // Configurar real-time subscription apenas se não existir ou se o contexto mudou
       if (!silent && (!subscriptionRef.current || bandIdChanged)) {
+        const subscribeStart = performance.now();
         subscriptionRef.current = await gigService.subscribeToGigs((updatedGigs) => {
           // Atualizar estado de forma otimizada
           setGigs(prevGigs => {
@@ -438,16 +498,32 @@ const App: React.FC = () => {
             return hasChanges ? updatedGigs : prevGigs;
           });
         }, selectedBandId);
+        const subscribeTime = performance.now() - subscribeStart;
+        console.log(`📡 [PERF] Subscription configurada - ${subscribeTime.toFixed(2)}ms`);
       }
+      
+      const totalTime = performance.now() - loadGigsStart;
+      console.log(`✅ [PERF] loadGigs CONCLUÍDO - Total: ${totalTime.toFixed(2)}ms`, {
+        breakdown: {
+          fetch: `${fetchTime.toFixed(2)}ms`,
+          setGigs: `${setGigsTime.toFixed(2)}ms`,
+          total: `${totalTime.toFixed(2)}ms`
+        },
+        bandId: selectedBandId,
+        gigsCount: data.length
+      });
     } catch (error: any) {
-      console.error('Erro ao carregar shows:', error);
+      const totalTime = performance.now() - loadGigsStart;
+      console.error(`❌ [PERF] Erro ao carregar shows - Total: ${totalTime.toFixed(2)}ms`, error);
       if (error.message === 'User not authenticated') {
         setIsAuthModalOpen(true);
       }
     } finally {
       loadingRef.current = false;
       if (!silent) {
+        const setLoadingStart = performance.now();
         setLoading(false);
+        console.log(`⚡ [PERF] setLoading(false) - ${(performance.now() - setLoadingStart).toFixed(2)}ms`);
       }
       // Remover indicador de transição após um pequeno delay para garantir que a UI atualizou
       setTimeout(() => setIsSwitchingAgenda(false), 100);

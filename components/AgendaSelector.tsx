@@ -66,24 +66,60 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
   }, [isOpen]);
 
   const loadBands = async () => {
+    const startTime = performance.now();
+    console.log(`🔍 [PERF] AgendaSelector.loadBands INICIADO`, {
+      timestamp: new Date().toISOString()
+    });
+
     try {
+      const setLoadingStart = performance.now();
       setLoading(true);
+      console.log(`⚡ [PERF] AgendaSelector.setLoading(true) - ${(performance.now() - setLoadingStart).toFixed(2)}ms`);
+
+      const fetchStart = performance.now();
       const userBands = await bandService.fetchUserBands();
+      const fetchTime = performance.now() - fetchStart;
+      
+      console.log(`📦 [PERF] AgendaSelector.fetchUserBands - ${fetchTime.toFixed(2)}ms`, {
+        count: userBands.length
+      });
+
+      const setBandsStart = performance.now();
       setBands(userBands);
+      console.log(`💾 [PERF] AgendaSelector.setBands() - ${(performance.now() - setBandsStart).toFixed(2)}ms`);
       
       // Verificar se a banda selecionada ainda existe
       if (selectedBandId) {
+        const checkStart = performance.now();
         const updatedBand = userBands.find(b => b.id === selectedBandId);
+        const checkTime = performance.now() - checkStart;
+        console.log(`🔍 [PERF] AgendaSelector.verificar banda selecionada - ${checkTime.toFixed(2)}ms`);
+
         if (!updatedBand) {
           // Banda foi deletada, redirecionar para agenda pessoal
+          console.log(`⚠️ [PERF] Banda selecionada não encontrada, redirecionando`);
           onBandSelect(null);
           toast.info('A banda foi excluída. Você foi redirecionado para sua agenda pessoal.');
         }
       }
+
+      const totalTime = performance.now() - startTime;
+      console.log(`✅ [PERF] AgendaSelector.loadBands CONCLUÍDO - Total: ${totalTime.toFixed(2)}ms`, {
+        breakdown: {
+          fetch: `${fetchTime.toFixed(2)}ms`,
+          setBands: `${(performance.now() - setBandsStart).toFixed(2)}ms`,
+          total: `${totalTime.toFixed(2)}ms`
+        },
+        bandsCount: userBands.length
+      });
     } catch (error: any) {
+      const totalTime = performance.now() - startTime;
+      console.error(`❌ [PERF] AgendaSelector.loadBands ERRO - Total: ${totalTime.toFixed(2)}ms`, error);
       toast.error(error.message || 'Erro ao carregar bandas');
     } finally {
+      const setLoadingStart = performance.now();
       setLoading(false);
+      console.log(`⚡ [PERF] AgendaSelector.setLoading(false) - ${(performance.now() - setLoadingStart).toFixed(2)}ms`);
     }
   };
 
