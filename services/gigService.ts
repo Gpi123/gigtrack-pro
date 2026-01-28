@@ -53,26 +53,7 @@ export const gigService = {
 
       return data || [];
     } else {
-      // Buscar gigs pessoais + gigs de todas as bandas do usuário
-      const step1Start = performance.now();
-      // 1. Buscar gigs pessoais (band_id IS NULL) - usando índice otimizado
-      const { data: personalGigs, error: personalError } = await supabase
-        .from('gigs')
-        .select('*')
-        .is('band_id', null)
-        .eq('user_id', user.id);
-      const step1Time = performance.now() - step1Start;
-      
-      console.log(`📊 [PERF] Step 1 - Query gigs pessoais - ${step1Time.toFixed(2)}ms`, {
-        count: personalGigs?.length || 0
-      });
-
-      if (personalError) {
-        console.error(`❌ [PERF] Erro na query de gigs pessoais:`, personalError);
-        throw personalError;
-      }
-
-      // 2. Buscar todas as bandas do usuário (usando cache)
+      // Agenda pessoal: buscar bandas primeiro (rápido, cache), depois gigs pessoais e de bandas EM PARALELO
       const step2Start = performance.now();
       const userBands = await getCachedUserBands(user.id);
       const step2Time = performance.now() - step2Start;
@@ -83,31 +64,47 @@ export const gigService = {
         bandIds: bandIds.length
       });
 
-      // 3. Buscar gigs de todas as bandas do usuário - usando índice otimizado
-      let bandGigs: Gig[] = [];
-      let step3Time = 0;
-      if (bandIds.length > 0) {
-        const step3Start = performance.now();
-        const { data: bandGigsData, error: bandGigsError } = await supabase
+      // Executar em paralelo: gigs pessoais + gigs de bandas (reduz tempo total)
+      const bandGigsQuery =
+        bandIds.length === 0
+          ? Promise.resolve({ data: [] as Gig[], error: null })
+          : bandIds.length === 1
+            ? supabase
+                .from('gigs')
+                .select('*')
+                .eq('band_id', bandIds[0])
+                .order('date', { ascending: true })
+            : supabase
+                .from('gigs')
+                .select('*')
+                .in('band_id', bandIds)
+                .order('date', { ascending: true });
+
+      const [personalResult, bandGigsResult] = await Promise.all([
+        supabase
           .from('gigs')
           .select('*')
-          .in('band_id', bandIds)
-          .order('date', { ascending: true });
-        step3Time = performance.now() - step3Start;
-        
-        console.log(`📊 [PERF] Step 3 - Query gigs de bandas - ${step3Time.toFixed(2)}ms`, {
-          bandIdsCount: bandIds.length,
-          count: bandGigsData?.length || 0
-        });
+          .is('band_id', null)
+          .eq('user_id', user.id)
+          .order('date', { ascending: true }),
+        bandGigsQuery
+      ]);
 
-        if (bandGigsError) {
-          console.error(`❌ [PERF] Erro na query de gigs de bandas:`, bandGigsError);
-          throw bandGigsError;
-        }
-        bandGigs = bandGigsData || [];
-      } else {
-        console.log(`📊 [PERF] Step 3 - Pulado (sem bandas)`);
+      const personalGigs = personalResult.data || [];
+      const personalError = personalResult.error;
+      const bandGigs = bandGigsResult.data || [];
+      const bandGigsError = bandGigsResult.error;
+
+      if (personalError) {
+        console.error(`❌ [PERF] Erro na query de gigs pessoais:`, personalError);
+        throw personalError;
       }
+      if (bandGigsError) {
+        console.error(`❌ [PERF] Erro na query de gigs de bandas:`, bandGigsError);
+        throw bandGigsError;
+      }
+
+      console.log(`📊 [PERF] Queries paralelas - pessoais: ${personalGigs.length}, bandas: ${bandGigs.length}`);
 
       // 4. Combinar e ordenar
       const step4Start = performance.now();
@@ -123,14 +120,13 @@ export const gigService = {
       console.log(`✅ [PERF] fetchGigs CONCLUÍDO (pessoal) - Total: ${totalTime.toFixed(2)}ms`, {
         breakdown: {
           auth: `${authTime.toFixed(2)}ms`,
-          step1_personal: `${step1Time.toFixed(2)}ms`,
-          step2_bands: `${step2Time.toFixed(2)}ms`,
-          step3_bandGigs: `${step3Time.toFixed(2)}ms`,
-          step4_sort: `${step4Time.toFixed(2)}ms`,
+          bands_cache: `${step2Time.toFixed(2)}ms`,
+          parallel_queries: `${(totalTime - authTime - step2Time - step4Time).toFixed(2)}ms`,
+          sort: `${step4Time.toFixed(2)}ms`,
           total: `${totalTime.toFixed(2)}ms`
         },
         counts: {
-          personal: personalGigs?.length || 0,
+          personal: personalGigs.length,
           band: bandGigs.length,
           total: sortedGigs.length
         }
