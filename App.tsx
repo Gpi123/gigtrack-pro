@@ -79,7 +79,10 @@ const App: React.FC = () => {
     }
 
     try {
-      const userBands = await bandService.fetchUserBands();
+      // Usar cache de bandas para evitar múltiplas chamadas
+      const { getCachedUserBands, invalidateBandsCache } = await import('./services/bandsCache');
+      invalidateBandsCache(); // Invalidar para forçar refresh
+      const userBands = await getCachedUserBands(user.id);
       setBandsCache(userBands);
     } catch (error) {
       console.error('Erro ao carregar bandas para cache:', error);

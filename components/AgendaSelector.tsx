@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, ChevronDown, Users, User, Plus, UserPlus, X, Loader2, Settings, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { bandService } from '../services/bandService';
+import { getCachedUserBands } from '../services/bandsCache';
 import { Band } from '../types';
 import { useToast } from './Toast';
 import BandManager from './BandManager';
@@ -76,8 +77,15 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
       setLoading(true);
       console.log(`⚡ [PERF] AgendaSelector.setLoading(true) - ${(performance.now() - setLoadingStart).toFixed(2)}ms`);
 
+      // Obter userId do cache de auth
+      const { getCachedUser } = await import('../services/authCache');
+      const user = await getCachedUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const fetchStart = performance.now();
-      const userBands = await bandService.fetchUserBands();
+      const userBands = await getCachedUserBands(user.id);
       const fetchTime = performance.now() - fetchStart;
       
       console.log(`📦 [PERF] AgendaSelector.fetchUserBands - ${fetchTime.toFixed(2)}ms`, {

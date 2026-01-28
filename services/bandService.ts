@@ -1,10 +1,11 @@
 import { supabase } from './supabase';
 import { Band, BandMember, BandInvite } from '../types';
+import { getCachedUser } from './authCache';
 
 export const bandService = {
   // Criar uma nova banda
   createBand: async (name: string, description?: string): Promise<Band> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
     const { data: band, error: bandError } = await supabase
@@ -39,9 +40,9 @@ export const bandService = {
     });
 
     const authStart = performance.now();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     const authTime = performance.now() - authStart;
-    console.log(`🔐 [PERF] fetchUserBands - Auth.getUser() - ${authTime.toFixed(2)}ms`);
+    console.log(`🔐 [PERF] fetchUserBands - Auth.getUser() (cached) - ${authTime.toFixed(2)}ms`);
 
     if (!user) throw new Error('User not authenticated');
 
@@ -159,7 +160,7 @@ export const bandService = {
 
   // Convidar usuário por email
   inviteUser: async (bandId: string, email: string): Promise<BandInvite> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
     // Verificar se o usuário tem permissão (owner ou member da banda)
@@ -232,7 +233,7 @@ export const bandService = {
 
   // Aceitar convite
   acceptInvite: async (token: string): Promise<string> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
     // Buscar convite
@@ -311,7 +312,7 @@ export const bandService = {
 
   // Atualizar banda
   updateBand: async (bandId: string, updates: { name?: string; description?: string }): Promise<Band> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
     // Verificar se é owner
@@ -349,7 +350,7 @@ export const bandService = {
 
   // Verificar convites pendentes do usuário atual
   checkPendingInvites: async (): Promise<BandInvite[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user || !user.email) return [];
 
     // Buscar perfil para garantir que temos o email

@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { Gig, GigStatus } from '../types';
 import { bandService } from './bandService';
+import { getCachedUser } from './authCache';
+import { getCachedUserBands } from './bandsCache';
 
 export const gigService = {
   // Fetch all gigs for the current user or a specific band
@@ -11,9 +13,9 @@ export const gigService = {
     });
 
     const authStart = performance.now();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     const authTime = performance.now() - authStart;
-    console.log(`🔐 [PERF] Auth.getUser() - ${authTime.toFixed(2)}ms`);
+    console.log(`🔐 [PERF] Auth.getUser() (cached) - ${authTime.toFixed(2)}ms`);
 
     if (!user) throw new Error('User not authenticated');
 
@@ -53,7 +55,7 @@ export const gigService = {
     } else {
       // Buscar gigs pessoais + gigs de todas as bandas do usuário
       const step1Start = performance.now();
-      // 1. Buscar gigs pessoais (band_id IS NULL)
+      // 1. Buscar gigs pessoais (band_id IS NULL) - usando índice otimizado
       const { data: personalGigs, error: personalError } = await supabase
         .from('gigs')
         .select('*')
@@ -70,9 +72,9 @@ export const gigService = {
         throw personalError;
       }
 
-      // 2. Buscar todas as bandas do usuário
+      // 2. Buscar todas as bandas do usuário (usando cache)
       const step2Start = performance.now();
-      const userBands = await bandService.fetchUserBands();
+      const userBands = await getCachedUserBands(user.id);
       const step2Time = performance.now() - step2Start;
       const bandIds = userBands.map(band => band.id);
       
@@ -81,7 +83,7 @@ export const gigService = {
         bandIds: bandIds.length
       });
 
-      // 3. Buscar gigs de todas as bandas do usuário
+      // 3. Buscar gigs de todas as bandas do usuário - usando índice otimizado
       let bandGigs: Gig[] = [];
       let step3Time = 0;
       if (bandIds.length > 0) {
@@ -140,7 +142,7 @@ export const gigService = {
 
   // Create a new gig
   createGig: async (gig: Omit<Gig, 'id' | 'user_id'>, bandId?: string | null): Promise<Gig> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
     // Ensure date is sent as a string in YYYY-MM-DD format (no timezone conversion)
@@ -164,7 +166,7 @@ export const gigService = {
 
   // Update an existing gig
   updateGig: async (id: string, updates: Partial<Gig>): Promise<Gig> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
     // RLS garante que só atualiza gigs que o usuário pode editar (próprios ou da banda)
@@ -181,7 +183,7 @@ export const gigService = {
 
   // Delete a gig
   deleteGig: async (id: string): Promise<void> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
     // RLS garante que só deleta gigs que o usuário pode deletar (próprios ou da banda)
@@ -195,7 +197,7 @@ export const gigService = {
 
   // Delete all gigs for the current user (only personal gigs, not band gigs)
   deleteAllGigs: async (bandId?: string | null): Promise<void> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
     let query = supabase
@@ -223,7 +225,7 @@ export const gigService = {
 
   // Subscribe to real-time changes
   subscribeToGigs: async (callback: (gigs: Gig[]) => void, bandId?: string | null) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) return null;
     
     // Criar filtro baseado no contexto (pessoal ou banda)
@@ -268,8 +270,8 @@ export const gigService = {
       );
     } else {
       // Para pessoal: escutar eventos pessoais E eventos de bandas do usuário
-      // Buscar bandas do usuário uma vez para criar filtros específicos
-      const userBands = await bandService.fetchUserBands();
+      // Buscar bandas do usuário uma vez para criar filtros específicos (usando cache)
+      const userBands = await getCachedUserBands(user.id);
       const userBandIds = userBands.map(b => b.id);
       
       // Cache das bandas para uso rápido na verificação
