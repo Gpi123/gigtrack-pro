@@ -4,6 +4,7 @@ import QRCode from 'react-qr-code';
 import { bandService } from '../services/bandService';
 import { Band, BandMember, BandInvite } from '../types';
 import { useToast } from './Toast';
+import { getCachedUser } from '../services/authCache';
 
 interface BandManagerProps {
   onBandSelect: (bandId: string | null) => void;
@@ -17,6 +18,7 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
   const [invites, setInvites] = useState<BandInvite[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newBandName, setNewBandName] = useState('');
   const [newBandDescription, setNewBandDescription] = useState('');
@@ -28,6 +30,12 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
 
   useEffect(() => {
     loadBands();
+    // Carregar ID do usuário atual
+    getCachedUser().then(user => {
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    });
   }, []);
 
   // Recarregar bandas quando selectedBandId mudar e a banda não estiver na lista
@@ -58,7 +66,12 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
   useEffect(() => {
     if (selectedBand) {
       // Sempre recarregar quando selectedBand mudar ou quando usado no modal
-      loadBandDetails(selectedBand.id);
+      // Usar debounce para evitar múltiplas chamadas
+      const timeoutId = setTimeout(() => {
+        loadBandDetails(selectedBand.id);
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     } else {
       // Limpar dados quando não há banda selecionada
       setMembers([]);
@@ -67,6 +80,11 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
   }, [selectedBand?.id, hideBandSelector]); // Recarregar quando banda mudar ou quando entrar no modal
 
   const loadBands = async () => {
+    // Se já temos bandas e estamos no modal, não recarregar
+    if (hideBandSelector && bands.length > 0) {
+      return;
+    }
+
     try {
       setLoading(true);
       const userBands = await bandService.fetchUserBands();
@@ -79,14 +97,39 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
   };
 
   const loadBandDetails = async (bandId: string) => {
+    const startTime = performance.now();
+    console.log(`🔍 [PERF] BandManager.loadBandDetails INICIADO`, {
+      bandId,
+      timestamp: new Date().toISOString()
+    });
+
     try {
       setLoadingDetails(true);
+      const fetchStart = performance.now();
       const [membersData, invitesData] = await Promise.all([
         bandService.fetchBandMembers(bandId),
         bandService.fetchBandInvites(bandId)
       ]);
+      const fetchTime = performance.now() - fetchStart;
+      
+      console.log(`📊 [PERF] BandManager.loadBandDetails - Fetch - ${fetchTime.toFixed(2)}ms`, {
+        membersCount: membersData.length,
+        invitesCount: invitesData.length
+      });
+
+      const setStateStart = performance.now();
       setMembers(membersData);
       setInvites(invitesData);
+      const setStateTime = performance.now() - setStateStart;
+      
+      const totalTime = performance.now() - startTime;
+      console.log(`✅ [PERF] BandManager.loadBandDetails CONCLUÍDO - Total: ${totalTime.toFixed(2)}ms`, {
+        breakdown: {
+          fetch: `${fetchTime.toFixed(2)}ms`,
+          setState: `${setStateTime.toFixed(2)}ms`,
+          total: `${totalTime.toFixed(2)}ms`
+        }
+      });
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar detalhes da banda');
     } finally {
@@ -206,6 +249,22 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
       toast.success('Membro removido com sucesso');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao remover membro');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelInvite = async (inviteId: string) => {
+    if (!selectedBand) return;
+    if (!confirm('Tem certeza que deseja cancelar este convite?')) return;
+
+    try {
+      setLoading(true);
+      await bandService.cancelInvite(inviteId);
+      await loadBandDetails(selectedBand.id);
+      toast.success('Convite cancelado com sucesso');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao cancelar convite');
     } finally {
       setLoading(false);
     }
@@ -364,13 +423,19 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
                             <span className="text-xs text-white truncate select-none" title={displayName}>
                               {displayName}
                             </span>
-                            <span className="text-[10px] text-white/50 uppercase flex-shrink-0 select-none">{member.role}</span>
+                            <span className="text-[10px] text-white/50 uppercase flex-shrink-0 select-none">
+                              {member.role}
+                              {currentUserId === member.user_id && (
+                                <span className="text-[#3057F2] ml-1">(Você)</span>
+                              )}
+                            </span>
                           </div>
                         </div>
-                        {member.role !== 'owner' && !hideBandSelector && (
+                        {member.role !== 'owner' && (
                           <button
                             onClick={() => handleRemoveMember(member.user_id)}
                             className="p-1 hover:bg-red-600/20 text-red-400 rounded transition-colors flex-shrink-0 ml-2 select-none"
+                            title="Remover membro"
                           >
                             <X size={12} />
                           </button>
@@ -390,8 +455,20 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
               <div className="mt-2 space-y-1">
                 {invites.map(invite => (
                   <div key={invite.id} className="flex items-center justify-between p-2 bg-[#24272D] rounded-lg select-none">
-                    <span className="text-xs text-white/70 select-none">{invite.email}</span>
-                    <span className="text-[10px] text-white/50 select-none">Pendente</span>
+                    <span className="text-xs text-white/70 select-none">
+                      {invite.email || 'Convite genérico (qualquer usuário pode aceitar)'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-white/50 select-none">Pendente</span>
+                      <button
+                        onClick={() => handleCancelInvite(invite.id)}
+                        className="p-1 hover:bg-red-600/20 text-red-400 rounded transition-colors flex-shrink-0 select-none"
+                        title="Cancelar convite"
+                        disabled={loading}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

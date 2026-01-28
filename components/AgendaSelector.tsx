@@ -354,7 +354,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md">
           <div className="bg-[#24272D] border border-[#31333B] rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">Ajustes da Banda</h2>
+              <h2 className="text-xl font-bold text-white select-none">Ajustes da Banda</h2>
               <button
                 onClick={() => {
                   setShowInviteModal(false);
@@ -362,7 +362,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                   setShowDeleteConfirm(false);
                   setEditBandName('');
                 }}
-                className="p-2 hover:bg-[#1E1F25] rounded-lg transition-colors"
+                className="p-2 hover:bg-[#1E1F25] rounded-lg transition-colors select-none"
               >
                 <X size={20} className="text-white/60" />
               </button>
@@ -421,7 +421,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
             {/* Seção de Editar Nome */}
             <div className="mb-6 p-4 bg-[#1E1F25] border border-[#31333B] rounded-xl">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-white">Nome da Banda</h3>
+                <h3 className="text-sm font-bold text-white select-none">Nome da Banda</h3>
                 {!showEditModal && (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
@@ -505,7 +505,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
 
             {/* Seção de Convidar Membros */}
             <div className="mb-4">
-              <h3 className="text-sm font-bold text-white mb-4">Membros e Convites</h3>
+              <h3 className="text-sm font-bold text-white mb-4 select-none">Membros e Convites</h3>
               <BandManager
                 key={selectedBand.id} // Forçar re-render quando a banda mudar
                 onBandSelect={onBandSelect}

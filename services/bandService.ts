@@ -231,6 +231,46 @@ export const bandService = {
     return data || [];
   },
 
+  // Cancelar convite pendente
+  cancelInvite: async (inviteId: string): Promise<void> => {
+    const user = await getCachedUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Verificar se o usuário tem permissão (owner ou quem criou o convite)
+    const { data: invite, error: inviteError } = await supabase
+      .from('band_invites')
+      .select('band_id, invited_by')
+      .eq('id', inviteId)
+      .single();
+
+    if (inviteError) throw inviteError;
+    if (!invite) throw new Error('Convite não encontrado');
+
+    // Verificar se é owner da banda
+    const { data: band, error: bandError } = await supabase
+      .from('bands')
+      .select('owner_id')
+      .eq('id', invite.band_id)
+      .single();
+
+    if (bandError) throw bandError;
+    
+    const isOwner = band.owner_id === user.id;
+    const isInviter = invite.invited_by === user.id;
+
+    if (!isOwner && !isInviter) {
+      throw new Error('Você não tem permissão para cancelar este convite');
+    }
+
+    // Atualizar status do convite para 'rejected' (cancelado)
+    const { error: updateError } = await supabase
+      .from('band_invites')
+      .update({ status: 'rejected' })
+      .eq('id', inviteId);
+
+    if (updateError) throw updateError;
+  },
+
   // Aceitar convite
   acceptInvite: async (token: string): Promise<string> => {
     const user = await getCachedUser();
