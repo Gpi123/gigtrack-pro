@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
-import { Gig, GigStatus } from '../types';
-import { bandService } from './bandService';
+import { Gig, GigStatus, GigPersonalOverride } from '../types';
 import { getCachedUser } from './authCache';
 import { getCachedUserBands } from './bandsCache';
 
@@ -106,13 +105,42 @@ export const gigService = {
 
       console.log(`📊 [PERF] Queries paralelas - pessoais: ${personalGigs.length}, bandas: ${bandGigs.length}`);
 
-      // 4. Combinar e ordenar
+      // 4. Aplicar overrides pessoais nos shows de banda e filtrar ocultos
       const step4Start = performance.now();
-      const allGigs = [...(personalGigs || []), ...bandGigs];
+      const bandGigIds = bandGigs.map(g => g.id);
+      let overrides: GigPersonalOverride[] = [];
+      if (bandGigIds.length > 0) {
+        const { data: overridesData } = await supabase
+          .from('gig_personal_overrides')
+          .select('*')
+          .eq('user_id', user.id)
+          .in('gig_id', bandGigIds);
+        overrides = overridesData || [];
+      }
+      const hiddenGigIds = new Set(overrides.filter(o => o.hidden).map(o => o.gig_id));
+      const overrideByGigId = new Map(overrides.filter(o => !o.hidden).map(o => [o.gig_id, o]));
+
+      const bandGigsMerged: Gig[] = bandGigs
+        .filter(g => !hiddenGigIds.has(g.id))
+        .map(g => {
+          const override = overrideByGigId.get(g.id);
+          if (!override) return { ...g, personal_override_id: null };
+          const merged: Gig = {
+            ...g,
+            title: override.title ?? g.title,
+            value: override.value !== null && override.value !== undefined ? Number(override.value) : g.value,
+            status: (override.status as GigStatus) ?? g.status,
+            notes: override.notes ?? g.notes,
+            personal_override_id: override.id
+          };
+          return merged;
+        });
+
+      const allGigs = [...(personalGigs || []), ...bandGigsMerged];
       const sortedGigs = allGigs.sort((a, b) => a.date.localeCompare(b.date));
       const step4Time = performance.now() - step4Start;
-      
-      console.log(`🔄 [PERF] Step 4 - Combinar e ordenar - ${step4Time.toFixed(2)}ms`, {
+
+      console.log(`🔄 [PERF] Step 4 - Overrides e ordenar - ${step4Time.toFixed(2)}ms`, {
         totalCount: sortedGigs.length
       });
 
@@ -127,7 +155,7 @@ export const gigService = {
         },
         counts: {
           personal: personalGigs.length,
-          band: bandGigs.length,
+          band: bandGigsMerged.length,
           total: sortedGigs.length
         }
       });
@@ -136,17 +164,23 @@ export const gigService = {
     }
   },
 
-  // Create a new gig
+  // Create a new gig (apenas owner pode criar show na agenda da banda)
   createGig: async (gig: Omit<Gig, 'id' | 'user_id'>, bandId?: string | null): Promise<Gig> => {
     const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
-    // Ensure date is sent as a string in YYYY-MM-DD format (no timezone conversion)
+    if (bandId) {
+      const { data: band } = await supabase.from('bands').select('owner_id').eq('id', bandId).single();
+      if (!band || band.owner_id !== user.id) {
+        throw new Error('Apenas o proprietário da banda pode criar shows na agenda da banda.');
+      }
+    }
+
     const gigData = {
       ...gig,
-      date: gig.date, // Keep as string - PostgreSQL DATE type doesn't have timezone
+      date: gig.date,
       user_id: user.id,
-      band_id: bandId || null, // NULL = pessoal, UUID = banda
+      band_id: bandId || null,
       status: gig.status || GigStatus.PENDING
     };
 
@@ -160,12 +194,49 @@ export const gigService = {
     return data;
   },
 
-  // Update an existing gig
-  updateGig: async (id: string, updates: Partial<Gig>): Promise<Gig> => {
+  // Update an existing gig ou override pessoal (quando na agenda pessoal, show da banda)
+  updateGig: async (id: string, updates: Partial<Gig>, isPersonalOverride?: boolean): Promise<Gig> => {
     const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
-    // RLS garante que só atualiza gigs que o usuário pode editar (próprios ou da banda)
+    if (isPersonalOverride) {
+      const { data: existing } = await supabase
+        .from('gig_personal_overrides')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('gig_id', id)
+        .single();
+      const payload = {
+        title: updates.title ?? null,
+        value: updates.value ?? null,
+        status: updates.status ?? null,
+        notes: updates.notes ?? null,
+        updated_at: new Date().toISOString()
+      };
+      if (existing) {
+        const { data, error } = await supabase
+          .from('gig_personal_overrides')
+          .update(payload)
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        const { data: gig } = await supabase.from('gigs').select('*').eq('id', id).single();
+        if (!gig) throw new Error('Show não encontrado');
+        return { ...gig, title: payload.title ?? gig.title, value: payload.value != null ? Number(payload.value) : gig.value, status: (payload.status as GigStatus) ?? gig.status, notes: payload.notes ?? gig.notes, personal_override_id: data.id } as Gig;
+      } else {
+        const { data, error } = await supabase
+          .from('gig_personal_overrides')
+          .insert({ user_id: user.id, gig_id: id, ...payload })
+          .select()
+          .single();
+        if (error) throw error;
+        const { data: gig } = await supabase.from('gigs').select('*').eq('id', id).single();
+        if (!gig) throw new Error('Show não encontrado');
+        return { ...gig, title: payload.title ?? gig.title, value: payload.value != null ? Number(payload.value) : gig.value, status: (payload.status as GigStatus) ?? gig.status, notes: payload.notes ?? gig.notes, personal_override_id: data.id } as Gig;
+      }
+    }
+
     const { data, error } = await supabase
       .from('gigs')
       .update(updates)
@@ -177,12 +248,33 @@ export const gigService = {
     return data;
   },
 
-  // Delete a gig
-  deleteGig: async (id: string): Promise<void> => {
+  // Delete a gig ou esconder da agenda pessoal (override)
+  deleteGig: async (id: string, isPersonalOverride?: boolean): Promise<void> => {
     const user = await getCachedUser();
     if (!user) throw new Error('User not authenticated');
 
-    // RLS garante que só deleta gigs que o usuário pode deletar (próprios ou da banda)
+    if (isPersonalOverride) {
+      const { data: existing } = await supabase
+        .from('gig_personal_overrides')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('gig_id', id)
+        .single();
+      if (existing) {
+        const { error } = await supabase
+          .from('gig_personal_overrides')
+          .update({ hidden: true, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('gig_personal_overrides')
+          .insert({ user_id: user.id, gig_id: id, hidden: true });
+        if (error) throw error;
+      }
+      return;
+    }
+
     const { error } = await supabase
       .from('gigs')
       .delete()
@@ -213,10 +305,10 @@ export const gigService = {
     if (error) throw error;
   },
 
-  // Toggle gig status
-  toggleGigStatus: async (id: string, currentStatus: GigStatus): Promise<Gig> => {
+  // Toggle gig status (ou do override na agenda pessoal)
+  toggleGigStatus: async (id: string, currentStatus: GigStatus, isPersonalOverride?: boolean): Promise<Gig> => {
     const newStatus = currentStatus === GigStatus.PAID ? GigStatus.PENDING : GigStatus.PAID;
-    return gigService.updateGig(id, { status: newStatus });
+    return gigService.updateGig(id, { status: newStatus }, isPersonalOverride);
   },
 
   // Subscribe to real-time changes

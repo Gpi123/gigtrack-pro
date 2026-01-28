@@ -12,17 +12,23 @@ interface GigListProps {
   isMultiSelectMode?: boolean;
   selectedGigIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
+  /** Agenda da banda: true quando uma banda está selecionada */
+  isBandAgenda?: boolean;
+  /** Usuário é o proprietário da banda (só owner edita/exclui/marca como pago na agenda da banda) */
+  isBandOwner?: boolean;
 }
 
-const GigList: React.FC<GigListProps> = ({ 
-  gigs, 
-  onToggleStatus, 
-  onDelete, 
-  onEdit, 
+const GigList: React.FC<GigListProps> = ({
+  gigs,
+  onToggleStatus,
+  onDelete,
+  onEdit,
   showValues,
   isMultiSelectMode = false,
   selectedGigIds = new Set(),
-  onToggleSelect
+  onToggleSelect,
+  isBandAgenda = false,
+  isBandOwner = true
 }) => {
   const formatCurrency = (val?: number) => {
     if (val === undefined || val === 0) return null;
@@ -35,32 +41,64 @@ const GigList: React.FC<GigListProps> = ({
     return new Date(year, month - 1, day);
   };
 
+  const readOnlyCard = isBandAgenda && !isBandOwner;
+
   return (
     <div className="space-y-3">
       {gigs.map((gig) => {
         const dateObj = getSafeDate(gig.date);
         const displayValue = formatCurrency(gig.value);
         const isSelected = selectedGigIds.has(gig.id);
-        
+
+        if (readOnlyCard) {
+          return (
+            <div
+              key={gig.id}
+              className="group bg-[#24272D] border border-[#31333B] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 select-none"
+            >
+              <div className="flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 bg-[#1E1F25] text-white">
+                <span className="text-[10px] uppercase font-bold select-none">
+                  {dateObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
+                </span>
+                <span className="text-xl font-bold leading-none select-none">{dateObj.getDate()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg truncate select-none text-white">
+                  {gig.title}
+                </h3>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-white select-none">
+                  <span className="flex items-center gap-1 select-none">
+                    <Music size={14} className="text-white" />
+                    {gig.band_name || 'Freelance'}
+                  </span>
+                  <span className="flex items-center gap-1 select-none">
+                    <MapPin size={14} className="text-white" />
+                    {gig.location || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
-          <div 
-            key={gig.id} 
+          <div
+            key={gig.id}
             className={`group bg-[#24272D] border transition-all hover:bg-[#1E1F25] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 select-none ${
               isMultiSelectMode && isSelected ? 'border-[#3057F2] bg-[#1E1F25]' :
               gig.status === GigStatus.PAID ? 'border-emerald-500/20 opacity-90' : 'border-[#31333B]'
             }`}
           >
             <div className="flex items-center gap-4 w-full sm:w-auto">
-              {/* Checkbox de seleção múltipla ou botão de marcar como pago */}
               {isMultiSelectMode ? (
-                <button 
+                <button
                   onClick={() => onToggleSelect?.(gig.id)}
                   className={`flex-shrink-0 transition-colors select-none ${isSelected ? 'text-[#3057F2]' : 'text-white'}`}
                 >
                   {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={() => onToggleStatus(gig.id)}
                   title={gig.status === GigStatus.PAID ? 'Marcar como pendente' : 'Marcar como pago'}
                   className={`flex-shrink-0 p-2 rounded-lg transition-colors select-none ${gig.status === GigStatus.PAID ? 'text-emerald-400 bg-emerald-400/10' : 'text-white hover:text-emerald-400 hover:bg-emerald-400/10'}`}
@@ -75,7 +113,7 @@ const GigList: React.FC<GigListProps> = ({
                 </span>
                 <span className="text-xl font-bold leading-none select-none">{dateObj.getDate()}</span>
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <h3 className={`font-semibold text-lg truncate select-none ${gig.status === GigStatus.PAID ? 'line-through text-white/50' : 'text-white'}`}>
                   {gig.title}
@@ -103,17 +141,16 @@ const GigList: React.FC<GigListProps> = ({
                 </div>
               </div>
 
-              {/* Botões de editar e excluir na direita (ocultos no modo multiseleção) */}
               {!isMultiSelectMode && (
                 <div className="flex items-center gap-1">
-                  <button 
+                  <button
                     onClick={() => onEdit(gig)}
                     className="p-2 text-white hover:text-white hover:bg-[#24272D] rounded-lg transition-colors select-none"
                   >
                     <Edit2 size={20} />
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => onDelete(gig.id)}
                     className="p-2 text-white hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors select-none"
                   >

@@ -11,9 +11,11 @@ interface AgendaSelectorProps {
   onBandSelect: (bandId: string | null) => void;
   isPeriodActive: boolean;
   selectedCalendarDate: string | null;
-  selectedBandName?: string | null; // Nome da banda para exibição instantânea
-  isSwitching?: boolean; // Indicador de transição
-  onBandsCacheUpdate?: (forceRefresh?: boolean) => void; // Callback para atualizar cache no App
+  selectedBandName?: string | null;
+  isSwitching?: boolean;
+  onBandsCacheUpdate?: (forceRefresh?: boolean) => void;
+  /** Apenas o owner vê o botão Ajustes (convidar, editar banda, etc.) */
+  isBandOwner?: boolean;
 }
 
 const AgendaSelector: React.FC<AgendaSelectorProps> = ({
@@ -23,7 +25,8 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
   selectedCalendarDate,
   selectedBandName,
   isSwitching = false,
-  onBandsCacheUpdate
+  onBandsCacheUpdate,
+  isBandOwner = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [bands, setBands] = useState<Band[]>([]);
@@ -192,8 +195,8 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
           />
         </button>
 
-        {/* Botão de Ajustes - aparece apenas quando uma banda está selecionada */}
-        {selectedBandId && selectedBand && (
+        {/* Botão de Ajustes - apenas o owner da banda vê (convidar, editar, excluir banda) */}
+        {selectedBandId && selectedBand && isBandOwner && (
           <button
             onClick={() => setShowInviteModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3057F2] hover:bg-[#2545D9] text-white text-sm font-semibold rounded-lg transition-colors"
@@ -272,7 +275,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                   <span className="font-medium select-none">Criar Banda</span>
                 </button>
 
-                {selectedBand && (
+                {selectedBand && isBandOwner && (
                   <button
                     onClick={() => {
                       setShowInviteModal(true);

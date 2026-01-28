@@ -15,6 +15,22 @@ export interface Gig {
   status: GigStatus;
   notes?: string;
   band_name?: string;
+  /** Quando na agenda pessoal, se o show é da banda e o membro tem override, id do override para update/delete */
+  personal_override_id?: string | null;
+}
+
+/** Override pessoal de um show da banda na agenda pessoal do membro */
+export interface GigPersonalOverride {
+  id: string;
+  user_id: string;
+  gig_id: string;
+  title?: string | null;
+  value?: number | null;
+  status?: GigStatus | null;
+  notes?: string | null;
+  hidden: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FinancialStats {
