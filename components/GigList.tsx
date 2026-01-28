@@ -45,7 +45,7 @@ const GigList: React.FC<GigListProps> = ({
         return (
           <div 
             key={gig.id} 
-            className={`group bg-[#24272D] border transition-all hover:bg-[#1E1F25] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+            className={`group bg-[#24272D] border transition-all hover:bg-[#1E1F25] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 select-none ${
               isMultiSelectMode && isSelected ? 'border-[#3057F2] bg-[#1E1F25]' :
               gig.status === GigStatus.PAID ? 'border-emerald-500/20 opacity-90' : 'border-[#31333B]'
             }`}
@@ -55,7 +55,7 @@ const GigList: React.FC<GigListProps> = ({
               {isMultiSelectMode ? (
                 <button 
                   onClick={() => onToggleSelect?.(gig.id)}
-                  className={`flex-shrink-0 transition-colors ${isSelected ? 'text-[#3057F2]' : 'text-white'}`}
+                  className={`flex-shrink-0 transition-colors select-none ${isSelected ? 'text-[#3057F2]' : 'text-white'}`}
                 >
                   {isSelected ? <CheckSquare size={20} /> : <Square size={20} />}
                 </button>
@@ -63,29 +63,29 @@ const GigList: React.FC<GigListProps> = ({
                 <button 
                   onClick={() => onToggleStatus(gig.id)}
                   title={gig.status === GigStatus.PAID ? 'Marcar como pendente' : 'Marcar como pago'}
-                  className={`flex-shrink-0 p-2 rounded-lg transition-colors ${gig.status === GigStatus.PAID ? 'text-emerald-400 bg-emerald-400/10' : 'text-white hover:text-emerald-400 hover:bg-emerald-400/10'}`}
+                  className={`flex-shrink-0 p-2 rounded-lg transition-colors select-none ${gig.status === GigStatus.PAID ? 'text-emerald-400 bg-emerald-400/10' : 'text-white hover:text-emerald-400 hover:bg-emerald-400/10'}`}
                 >
                   {gig.status === GigStatus.PAID ? <CheckCircle2 size={20} /> : <Circle size={20} />}
                 </button>
               )}
 
-              <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 ${gig.status === GigStatus.PAID ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#1E1F25] text-white'}`}>
-                <span className="text-[10px] uppercase font-bold">
+              <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 select-none ${gig.status === GigStatus.PAID ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#1E1F25] text-white'}`}>
+                <span className="text-[10px] uppercase font-bold select-none">
                   {dateObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
                 </span>
-                <span className="text-xl font-bold leading-none">{dateObj.getDate()}</span>
+                <span className="text-xl font-bold leading-none select-none">{dateObj.getDate()}</span>
               </div>
               
               <div className="flex-1 min-w-0">
-                <h3 className={`font-semibold text-lg truncate ${gig.status === GigStatus.PAID ? 'line-through text-white/50' : 'text-white'}`}>
+                <h3 className={`font-semibold text-lg truncate select-none ${gig.status === GigStatus.PAID ? 'line-through text-white/50' : 'text-white'}`}>
                   {gig.title}
                 </h3>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-white">
-                  <span className="flex items-center gap-1">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-white select-none">
+                  <span className="flex items-center gap-1 select-none">
                     <Music size={14} className="text-white" />
                     {gig.band_name || 'Freelance'}
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1 select-none">
                     <MapPin size={14} className="text-white" />
                     {gig.location || 'N/A'}
                   </span>
@@ -94,11 +94,11 @@ const GigList: React.FC<GigListProps> = ({
             </div>
 
             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
-              <div className="text-right">
-                <div className={`text-lg font-bold transition-all duration-300 ${displayValue ? 'text-white' : 'text-white italic text-sm'}`}>
+              <div className="text-right select-none">
+                <div className={`text-lg font-bold transition-all duration-300 select-none ${displayValue ? 'text-white' : 'text-white italic text-sm'}`}>
                   {displayValue || 'A definir'}
                 </div>
-                <div className={`text-[10px] font-bold uppercase tracking-widest ${gig.status === GigStatus.PAID ? 'text-emerald-500' : 'text-amber-500'}`}>
+                <div className={`text-[10px] font-bold uppercase tracking-widest select-none ${gig.status === GigStatus.PAID ? 'text-emerald-500' : 'text-amber-500'}`}>
                   {gig.status === GigStatus.PAID ? 'PAGO' : 'PENDENTE'}
                 </div>
               </div>
@@ -108,14 +108,14 @@ const GigList: React.FC<GigListProps> = ({
                 <div className="flex items-center gap-1">
                   <button 
                     onClick={() => onEdit(gig)}
-                    className="p-2 text-white hover:text-white hover:bg-[#24272D] rounded-lg transition-colors"
+                    className="p-2 text-white hover:text-white hover:bg-[#24272D] rounded-lg transition-colors select-none"
                   >
                     <Edit2 size={20} />
                   </button>
                   
                   <button 
                     onClick={() => onDelete(gig.id)}
-                    className="p-2 text-white hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                    className="p-2 text-white hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors select-none"
                   >
                     <Trash2 size={20} />
                   </button>

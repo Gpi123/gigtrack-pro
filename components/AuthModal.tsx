@@ -54,17 +54,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
   if (!isOpen && user) return null;
 
   return (
-    <div className={`${isOpen ? 'fixed' : 'relative'} inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'bg-black/80 backdrop-blur-sm' : ''} animate-in fade-in duration-200`}>
+    <div className={`${isOpen ? 'fixed' : 'relative'} inset-0 z-50 flex items-center justify-center p-4 ${isOpen ? 'bg-black/80 backdrop-blur-sm' : ''} animate-in fade-in duration-200 select-none`}>
       <div className="bg-[#24272D] border border-[#31333B] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
         {isOpen && (
           <div className="px-6 py-4 border-b border-[#31333B] flex justify-between items-center bg-[#24272D]">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 select-none">
               <UserIcon size={20} />
               {user ? 'Minha Conta' : 'Entrar'}
             </h2>
             <button 
               onClick={onClose} 
-              className="p-2 hover:bg-[#1E1F25] rounded-full text-white transition-colors"
+              className="p-2 hover:bg-[#1E1F25] rounded-full text-white transition-colors select-none"
               disabled={isLoading}
             >
               <X size={20} />
@@ -74,7 +74,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
 
         <div className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm select-none">
               {error}
             </div>
           )}
@@ -90,17 +90,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
                   />
                 )}
                 <div className="text-center">
-                  <p className="text-white font-semibold">
+                  <p className="text-white font-semibold select-none">
                     {profile?.full_name || user.email}
                   </p>
-                  <p className="text-white text-sm">{user.email}</p>
+                  <p className="text-white text-sm select-none">{user.email}</p>
                 </div>
               </div>
 
               <button
                 onClick={handleSignOut}
                 disabled={isLoading}
-                className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed select-none"
               >
                 {isLoading ? (
                   <>
@@ -117,14 +117,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, user, profile, o
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-white text-center">
+              <p className="text-white text-center select-none">
                 Faça login com sua conta Google para sincronizar seus shows na nuvem
               </p>
 
               <button
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
-                className="w-full bg-white hover:bg-gray-100 text-gray-900 px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                className="w-full bg-white hover:bg-gray-100 text-gray-900 px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg select-none"
               >
                 {isLoading ? (
                   <>

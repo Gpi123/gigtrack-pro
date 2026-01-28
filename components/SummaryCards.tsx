@@ -45,7 +45,7 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-3">
+    <div className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-3 select-none">
       {cardData.map((card, index) => (
         <div 
           key={index}
@@ -56,10 +56,10 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ stats, showValues }) => {
             {card.icon}
           </div>
           <div className="flex flex-col items-start lg:items-start min-w-0 flex-1 w-full gap-1 lg:gap-0">
-            <span className="text-white text-[9px] lg:text-[10px] font-bold uppercase tracking-wide lg:tracking-widest leading-tight">
+            <span className="text-white text-[9px] lg:text-[10px] font-bold uppercase tracking-wide lg:tracking-widest leading-tight select-none">
               {card.label}
             </span>
-            <div className={`text-sm lg:text-xl font-bold ${card.textColor} tracking-tight transition-all duration-300 leading-tight`}>
+            <div className={`text-sm lg:text-xl font-bold ${card.textColor} tracking-tight transition-all duration-300 leading-tight select-none`}>
               {formatCurrency(card.value)}
             </div>
           </div>

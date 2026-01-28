@@ -37,17 +37,17 @@ const Toast: React.FC<ToastProps> = ({ id, message, type, duration = 5000, onUnd
   };
 
   return (
-    <div className={`${bgColors[type]} border rounded-xl p-4 shadow-lg backdrop-blur-sm animate-in slide-in-from-right-5 duration-300 min-w-[300px] max-w-[400px]`}>
+    <div className={`${bgColors[type]} border rounded-xl p-4 shadow-lg backdrop-blur-sm animate-in slide-in-from-right-5 duration-300 min-w-[300px] max-w-[400px] select-none`}>
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
           {icons[type]}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white">{message}</p>
+          <p className="text-sm font-medium text-white select-none">{message}</p>
           {onUndo && (
             <button
               onClick={onUndo}
-              className="mt-2 text-xs font-semibold text-[#3057F2] hover:text-[#2545D9] transition-colors"
+              className="mt-2 text-xs font-semibold text-[#3057F2] hover:text-[#2545D9] transition-colors select-none"
             >
               Desfazer
             </button>
@@ -55,7 +55,7 @@ const Toast: React.FC<ToastProps> = ({ id, message, type, duration = 5000, onUnd
         </div>
         <button
           onClick={() => onClose(id)}
-          className="flex-shrink-0 p-1 hover:bg-white/10 rounded-lg transition-colors text-white/60 hover:text-white"
+          className="flex-shrink-0 p-1 hover:bg-white/10 rounded-lg transition-colors text-white/60 hover:text-white select-none"
         >
           <X size={16} />
         </button>

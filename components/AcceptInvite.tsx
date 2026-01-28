@@ -72,11 +72,11 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
 
   if (status === 'checking') {
     return (
-      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md">
+      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md select-none">
         <div className="bg-[#24272D] border border-[#31333B] rounded-2xl p-8 max-w-md w-full mx-4">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Loader2 size={48} className="animate-spin text-[#3057F2]" />
-            <p className="text-white text-center">Verificando convite...</p>
+            <p className="text-white text-center select-none">Verificando convite...</p>
           </div>
         </div>
       </div>
@@ -85,21 +85,21 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
 
   if (status === 'needs-login') {
     return (
-      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md">
+      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md select-none">
         <div className="bg-[#24272D] border border-[#31333B] rounded-2xl p-8 max-w-md w-full mx-4">
           <div className="flex flex-col items-center justify-center space-y-6">
             <div className="p-4 bg-[#3057F2]/20 rounded-full">
               <LogIn size={48} className="text-[#3057F2]" />
             </div>
             <div className="text-center space-y-2">
-              <h2 className="text-xl font-bold text-white">Login Necessário</h2>
-              <p className="text-white/70 text-sm">
+              <h2 className="text-xl font-bold text-white select-none">Login Necessário</h2>
+              <p className="text-white/70 text-sm select-none">
                 Você precisa fazer login com sua conta Google para aceitar este convite.
               </p>
             </div>
             <button
               onClick={handleLogin}
-              className="w-full px-6 py-3 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 select-none"
             >
               <LogIn size={20} />
               Entrar com Google
@@ -112,11 +112,11 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
 
   if (status === 'accepting') {
     return (
-      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md">
+      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md select-none">
         <div className="bg-[#24272D] border border-[#31333B] rounded-2xl p-8 max-w-md w-full mx-4">
           <div className="flex flex-col items-center justify-center space-y-4">
             <Loader2 size={48} className="animate-spin text-[#3057F2]" />
-            <p className="text-white text-center">Aceitando convite...</p>
+            <p className="text-white text-center select-none">Aceitando convite...</p>
           </div>
         </div>
       </div>
@@ -125,14 +125,14 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
 
   if (status === 'success') {
     return (
-      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md">
+      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md select-none">
         <div className="bg-[#24272D] border border-[#31333B] rounded-2xl p-8 max-w-md w-full mx-4">
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="p-4 bg-green-500/20 rounded-full">
               <CheckCircle size={48} className="text-green-500" />
             </div>
-            <h2 className="text-xl font-bold text-white text-center">Convite Aceito!</h2>
-            <p className="text-white/70 text-sm text-center">
+            <h2 className="text-xl font-bold text-white text-center select-none">Convite Aceito!</h2>
+            <p className="text-white/70 text-sm text-center select-none">
               Você agora é membro da banda. Redirecionando...
             </p>
           </div>
@@ -143,17 +143,17 @@ const AcceptInvite: React.FC<AcceptInviteProps> = ({ token, onComplete }) => {
 
   if (status === 'error') {
     return (
-      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md">
+      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md select-none">
         <div className="bg-[#24272D] border border-[#31333B] rounded-2xl p-8 max-w-md w-full mx-4">
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="p-4 bg-red-500/20 rounded-full">
               <XCircle size={48} className="text-red-500" />
             </div>
-            <h2 className="text-xl font-bold text-white text-center">Erro</h2>
-            <p className="text-white/70 text-sm text-center">{errorMessage}</p>
+            <h2 className="text-xl font-bold text-white text-center select-none">Erro</h2>
+            <p className="text-white/70 text-sm text-center select-none">{errorMessage}</p>
             <button
               onClick={onComplete}
-              className="w-full px-6 py-3 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors"
+              className="w-full px-6 py-3 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors select-none"
             >
               Fechar
             </button>

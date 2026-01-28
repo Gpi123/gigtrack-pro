@@ -179,16 +179,16 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
       <div className="relative flex items-center gap-3" ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 text-2xl font-bold text-white hover:opacity-80 transition-opacity relative"
+          className="flex items-center gap-3 text-2xl font-bold text-white hover:opacity-80 transition-opacity relative select-none"
         >
           <LayoutDashboard size={24} className="text-white flex-shrink-0" />
-          <span className="whitespace-nowrap">{getCurrentAgendaName()}</span>
+          <span className="whitespace-nowrap select-none">{getCurrentAgendaName()}</span>
           {isSwitching && (
             <Loader2 size={16} className="text-[#3057F2] animate-spin ml-2" />
           )}
           <ChevronDown 
             size={20} 
-            className={`text-white/60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            className={`text-white/60 transition-transform select-none ${isOpen ? 'rotate-180' : ''}`}
           />
         </button>
 
@@ -207,7 +207,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
         {isOpen && (
           <div className="absolute top-full left-0 mt-2 w-80 bg-[#24272D] border border-[#31333B] rounded-xl shadow-2xl z-50 overflow-hidden">
             <div className="p-4 border-b border-[#31333B]">
-              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Selecionar Agenda</h3>
+              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider select-none">Selecionar Agenda</h3>
             </div>
 
             <div className="max-h-96 overflow-y-auto">
@@ -217,12 +217,12 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                   onBandSelect(null);
                   setIsOpen(false);
                 }}
-                className={`w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[#1E1F25] transition-colors ${
+                className={`w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[#1E1F25] transition-colors select-none ${
                   selectedBandId === null ? 'bg-[#3057F2]/10 border-l-2 border-[#3057F2]' : ''
                 }`}
               >
                 <User size={20} className={selectedBandId === null ? 'text-[#3057F2]' : 'text-white/60'} />
-                <span className={`font-semibold ${selectedBandId === null ? 'text-[#3057F2]' : 'text-white'}`}>
+                <span className={`font-semibold select-none ${selectedBandId === null ? 'text-[#3057F2]' : 'text-white'}`}>
                   Agenda Pessoal
                 </span>
                 {selectedBandId === null && (
@@ -234,7 +234,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
               {bands.length > 0 && (
                 <div className="border-t border-[#31333B]">
                   <div className="px-4 py-2">
-                    <h4 className="text-xs font-semibold text-white/40 uppercase tracking-wider">Bandas</h4>
+                    <h4 className="text-xs font-semibold text-white/40 uppercase tracking-wider select-none">Bandas</h4>
                   </div>
                   {bands.map((band) => (
                     <button
@@ -243,12 +243,12 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                         onBandSelect(band.id);
                         setIsOpen(false);
                       }}
-                      className={`w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[#1E1F25] transition-colors ${
+                      className={`w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[#1E1F25] transition-colors select-none ${
                         selectedBandId === band.id ? 'bg-[#3057F2]/10 border-l-2 border-[#3057F2]' : ''
                       }`}
                     >
                       <Users size={20} className={selectedBandId === band.id ? 'text-[#3057F2]' : 'text-white/60'} />
-                      <span className={`font-semibold flex-1 ${selectedBandId === band.id ? 'text-[#3057F2]' : 'text-white'}`}>
+                      <span className={`font-semibold flex-1 select-none ${selectedBandId === band.id ? 'text-[#3057F2]' : 'text-white'}`}>
                         {band.name}
                       </span>
                       {selectedBandId === band.id && (
@@ -266,10 +266,10 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                     setShowCreateModal(true);
                     setIsOpen(false);
                   }}
-                  className="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-[#1E1F25] rounded-lg transition-colors text-white"
+                  className="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-[#1E1F25] rounded-lg transition-colors text-white select-none"
                 >
                   <Plus size={18} className="text-[#3057F2]" />
-                  <span className="font-medium">Criar Banda</span>
+                  <span className="font-medium select-none">Criar Banda</span>
                 </button>
 
                 {selectedBand && (
@@ -278,10 +278,10 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                       setShowInviteModal(true);
                       setIsOpen(false);
                     }}
-                    className="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-[#1E1F25] rounded-lg transition-colors text-white"
+                    className="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-[#1E1F25] rounded-lg transition-colors text-white select-none"
                   >
                     <UserPlus size={18} className="text-[#3057F2]" />
-                    <span className="font-medium">Convidar Usuários</span>
+                    <span className="font-medium select-none">Convidar Usuários</span>
                   </button>
                 )}
               </div>

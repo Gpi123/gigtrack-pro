@@ -230,16 +230,16 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 select-none">
       {!hideBandSelector && (
         <>
           <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] flex items-center gap-2">
+            <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] flex items-center gap-2 select-none">
               <Users size={14} className="text-white" /> Minhas Bandas
             </h3>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="p-1.5 hover:bg-[#1E1F25] rounded-lg text-white transition-colors"
+              className="p-1.5 hover:bg-[#1E1F25] rounded-lg text-white transition-colors select-none"
               title="Criar nova banda"
             >
               <Plus size={16} />
@@ -253,13 +253,13 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
                 onBandSelect(null);
                 setSelectedBand(null);
               }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all select-none ${
                 selectedBandId === null
                   ? 'bg-[#3057F2] text-white'
                   : 'bg-[#24272D] text-white hover:bg-[#31333B]'
               }`}
             >
-              Minha Agenda Pessoal
+              <span className="select-none">Minha Agenda Pessoal</span>
             </button>
             {bands.map(band => (
               <button
@@ -268,13 +268,13 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
                   onBandSelect(band.id);
                   setSelectedBand(band);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-all select-none ${
                   selectedBandId === band.id
                     ? 'bg-[#3057F2] text-white'
                     : 'bg-[#24272D] text-white hover:bg-[#31333B]'
                 }`}
               >
-                {band.name}
+                <span className="select-none">{band.name}</span>
               </button>
             ))}
           </div>
@@ -283,18 +283,18 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
 
       {/* Detalhes da banda selecionada */}
       {selectedBand && (
-        <div className="bg-[#1E1F25] border border-[#31333B] rounded-xl p-4 space-y-4">
+        <div className="bg-[#1E1F25] border border-[#31333B] rounded-xl p-4 space-y-4 select-none">
           <div className="flex items-start justify-between">
             <div>
-              <h4 className="text-sm font-bold text-white">{selectedBand.name}</h4>
+              <h4 className="text-sm font-bold text-white select-none">{selectedBand.name}</h4>
               {selectedBand.description && (
-                <p className="text-xs text-white/70 mt-1">{selectedBand.description}</p>
+                <p className="text-xs text-white/70 mt-1 select-none">{selectedBand.description}</p>
               )}
             </div>
             {!hideBandSelector && (
               <button
                 onClick={handleDeleteBand}
-                className="p-1.5 hover:bg-red-600/20 text-red-400 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-red-600/20 text-red-400 rounded-lg transition-colors select-none"
                 title="Deletar banda"
               >
                 <Trash2 size={14} />
@@ -305,13 +305,13 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
           {/* Membros */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-white uppercase">Membros</span>
+              <span className="text-xs font-bold text-white uppercase select-none">Membros</span>
               <button
                 onClick={handleInviteUser}
                 disabled={loading}
-                className="flex items-center gap-1 px-2 py-1 bg-[#3057F2] hover:bg-[#2545D9] text-white text-xs rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 px-2 py-1 bg-[#3057F2] hover:bg-[#2545D9] text-white text-xs rounded-lg transition-colors disabled:opacity-50 select-none"
               >
-                {loading ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />} Convidar
+                {loading ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />} <span className="select-none">Convidar</span>
               </button>
             </div>
             {loadingDetails && members.length === 0 ? (
@@ -321,7 +321,7 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
             ) : (
               <div className="space-y-1">
                 {members.length === 0 && !loadingDetails ? (
-                  <p className="text-xs text-white/50 text-center py-4">Nenhum membro encontrado</p>
+                  <p className="text-xs text-white/50 text-center py-4 select-none">Nenhum membro encontrado</p>
                 ) : (
                   members.map(member => {
                     // Determinar nome para exibir - priorizar full_name, depois email, depois "Usuário"
@@ -335,7 +335,7 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
                                   '?';
                     
                     return (
-                      <div key={member.id} className="flex items-center justify-between p-2 bg-[#24272D] rounded-lg">
+                      <div key={member.id} className="flex items-center justify-between p-2 bg-[#24272D] rounded-lg select-none">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           {member.profile?.avatar_url ? (
                             <img 
@@ -361,16 +361,16 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
                             </div>
                           )}
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="text-xs text-white truncate" title={displayName}>
+                            <span className="text-xs text-white truncate select-none" title={displayName}>
                               {displayName}
                             </span>
-                            <span className="text-[10px] text-white/50 uppercase flex-shrink-0">{member.role}</span>
+                            <span className="text-[10px] text-white/50 uppercase flex-shrink-0 select-none">{member.role}</span>
                           </div>
                         </div>
                         {member.role !== 'owner' && !hideBandSelector && (
                           <button
                             onClick={() => handleRemoveMember(member.user_id)}
-                            className="p-1 hover:bg-red-600/20 text-red-400 rounded transition-colors flex-shrink-0 ml-2"
+                            className="p-1 hover:bg-red-600/20 text-red-400 rounded transition-colors flex-shrink-0 ml-2 select-none"
                           >
                             <X size={12} />
                           </button>
@@ -386,12 +386,12 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
           {/* Convites pendentes */}
           {invites.length > 0 && (
             <div>
-              <span className="text-xs font-bold text-white uppercase">Convites Pendentes</span>
+              <span className="text-xs font-bold text-white uppercase select-none">Convites Pendentes</span>
               <div className="mt-2 space-y-1">
                 {invites.map(invite => (
-                  <div key={invite.id} className="flex items-center justify-between p-2 bg-[#24272D] rounded-lg">
-                    <span className="text-xs text-white/70">{invite.email}</span>
-                    <span className="text-[10px] text-white/50">Pendente</span>
+                  <div key={invite.id} className="flex items-center justify-between p-2 bg-[#24272D] rounded-lg select-none">
+                    <span className="text-xs text-white/70 select-none">{invite.email}</span>
+                    <span className="text-[10px] text-white/50 select-none">Pendente</span>
                   </div>
                 ))}
               </div>
@@ -402,13 +402,13 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
 
       {/* Modal Criar Banda */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 select-none">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowCreateModal(false)} />
           <div className="relative bg-[#24272D] border border-[#31333B] rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-white mb-4">Criar Nova Banda</h3>
+            <h3 className="text-lg font-bold text-white mb-4 select-none">Criar Nova Banda</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-white uppercase mb-1 block">Nome da Banda</label>
+                <label className="text-xs font-bold text-white uppercase mb-1 block select-none">Nome da Banda</label>
                 <input
                   type="text"
                   value={newBandName}
@@ -419,7 +419,7 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-white uppercase mb-1 block">Descrição (Opcional)</label>
+                <label className="text-xs font-bold text-white uppercase mb-1 block select-none">Descrição (Opcional)</label>
                 <textarea
                   value={newBandDescription}
                   onChange={(e) => setNewBandDescription(e.target.value)}
@@ -431,17 +431,17 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 bg-[#1E1F25] hover:bg-[#31333B] text-white rounded-xl font-semibold transition-colors"
+                  className="flex-1 px-4 py-2 bg-[#1E1F25] hover:bg-[#31333B] text-white rounded-xl font-semibold transition-colors select-none"
                 >
-                  Cancelar
+                  <span className="select-none">Cancelar</span>
                 </button>
                 <button
                   onClick={handleCreateBand}
                   disabled={loading || !newBandName.trim()}
-                  className="flex-1 px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 select-none"
                 >
                   {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                  Criar
+                  <span className="select-none">Criar</span>
                 </button>
               </div>
             </div>
@@ -451,11 +451,11 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
 
       {/* Modal com QR Code do Convite */}
       {createdInvite && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 select-none">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setCreatedInvite(null)} />
           <div className="relative bg-[#24272D] border border-[#31333B] rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-white mb-2">Convite para {createdInvite.bandName}</h3>
-            <p className="text-sm text-white/70 mb-4 text-center">
+            <h3 className="text-lg font-bold text-white mb-2 select-none">Convite para {createdInvite.bandName}</h3>
+            <p className="text-sm text-white/70 mb-4 text-center select-none">
               Compartilhe este QR Code ou link para convidar alguém
             </p>
             
@@ -474,38 +474,38 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
             <div className="space-y-2 mb-4">
               <button
                 onClick={copyQRCodeImage}
-                className="w-full px-4 py-2.5 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-2.5 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 select-none"
               >
                 {copied ? (
                   <>
                     <CheckCircle size={18} />
-                    QR Code Copiado!
+                    <span className="select-none">QR Code Copiado!</span>
                   </>
                 ) : (
                   <>
                     <QrCode size={18} />
-                    Copiar QR Code
+                    <span className="select-none">Copiar QR Code</span>
                   </>
                 )}
               </button>
               <button
                 onClick={copyInviteLink}
-                className="w-full px-4 py-2.5 bg-[#1E1F25] hover:bg-[#31333B] text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-2.5 bg-[#1E1F25] hover:bg-[#31333B] text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 select-none"
               >
                 <Copy size={18} />
-                Copiar Link
+                <span className="select-none">Copiar Link</span>
               </button>
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs text-white/60 text-center">
+              <p className="text-xs text-white/60 text-center select-none">
                 💡 <strong>Dica:</strong> Escaneie o QR Code ou compartilhe o link. O usuário será redirecionado para fazer login com Google e entrará automaticamente na banda.
               </p>
               <button
                 onClick={() => setCreatedInvite(null)}
-                className="w-full px-4 py-2 bg-[#31333B] hover:bg-[#1E1F25] text-white rounded-xl font-semibold transition-colors"
+                className="w-full px-4 py-2 bg-[#31333B] hover:bg-[#1E1F25] text-white rounded-xl font-semibold transition-colors select-none"
               >
-                Fechar
+                <span className="select-none">Fechar</span>
               </button>
             </div>
           </div>

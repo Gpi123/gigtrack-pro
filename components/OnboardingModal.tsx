@@ -38,11 +38,11 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   };
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-md select-none">
       <div className="bg-[#24272D] border border-[#31333B] rounded-2xl p-8 max-w-2xl w-full mx-4">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo ao GigTrack Pro!</h2>
-          <p className="text-white/70 text-sm">
+          <h2 className="text-2xl font-bold text-white mb-2 select-none">Bem-vindo ao GigTrack Pro!</h2>
+          <p className="text-white/70 text-sm select-none">
             Escolha como você quer começar a organizar seus shows
           </p>
         </div>
@@ -60,8 +60,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                   <User size={48} className="text-[#3057F2]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-2">Agenda Pessoal</h3>
-                  <p className="text-sm text-white/70">
+                  <h3 className="text-lg font-bold text-white mb-2 select-none">Agenda Pessoal</h3>
+                  <p className="text-sm text-white/70 select-none">
                     Organize seus shows pessoais de forma individual. Ideal para músicos solo ou quando você quer manter seus eventos privados.
                   </p>
                 </div>
@@ -84,8 +84,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                   <Users size={48} className="text-[#3057F2]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-2">Criar uma Banda</h3>
-                  <p className="text-sm text-white/70">
+                  <h3 className="text-lg font-bold text-white mb-2 select-none">Criar uma Banda</h3>
+                  <p className="text-sm text-white/70 select-none">
                     Crie uma organização colaborativa onde você e sua equipe podem gerenciar shows juntos. Todos podem adicionar e editar eventos.
                   </p>
                 </div>
@@ -100,7 +100,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
         ) : (
           <div className="space-y-4 mb-6">
             <div>
-              <label className="text-sm font-bold text-white uppercase mb-2 block">
+              <label className="text-sm font-bold text-white uppercase mb-2 block select-none">
                 Nome da Banda
               </label>
               <input
@@ -123,14 +123,14 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                   setShowBandNameInput(false);
                   setBandName('');
                 }}
-                className="flex-1 px-4 py-2 bg-[#1E1F25] hover:bg-[#31333B] text-white rounded-xl font-semibold transition-colors"
+                className="flex-1 px-4 py-2 bg-[#1E1F25] hover:bg-[#31333B] text-white rounded-xl font-semibold transition-colors select-none"
               >
                 Voltar
               </button>
               <button
                 onClick={() => handleChoice('band')}
                 disabled={loading || !bandName.trim()}
-                className="flex-1 px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-[#3057F2] hover:bg-[#2545D9] text-white rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 select-none"
               >
                 {loading ? (
                   <>
@@ -145,7 +145,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
           </div>
         )}
 
-        <p className="text-xs text-white/50 text-center">
+        <p className="text-xs text-white/50 text-center select-none">
           💡 Você pode criar uma agenda pessoal depois, mesmo se escolher criar uma banda agora.
         </p>
       </div>

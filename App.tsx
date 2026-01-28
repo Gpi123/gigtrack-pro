@@ -895,14 +895,14 @@ const App: React.FC = () => {
   // Se não estiver autenticado, mostrar apenas tela de login
   if (!user && !loading) {
     return (
-      <div className="min-h-screen bg-[#1E1F25] text-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#1E1F25] text-white flex items-center justify-center p-4 select-none">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="bg-[#3057F2] p-4 rounded-2xl inline-block mb-4">
               <Calendar className="w-12 h-12 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">GigTrack <span className="text-[#3057F2]">Pro</span></h1>
-            <p className="text-white">Sua agenda de shows profissional</p>
+            <h1 className="text-3xl font-bold text-white mb-2 select-none">GigTrack <span className="text-[#3057F2] select-none">Pro</span></h1>
+            <p className="text-white select-none">Sua agenda de shows profissional</p>
           </div>
           <AuthModal 
             isOpen={true} 
@@ -925,23 +925,23 @@ const App: React.FC = () => {
         onBandSelect={setSelectedBandId}
       />
 
-      <header className="bg-[#24272D]/80 backdrop-blur-md border-b border-[#31333B] sticky top-0 z-40">
+      <header className="bg-[#24272D]/80 backdrop-blur-md border-b border-[#31333B] sticky top-0 z-40 select-none">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsMenuOpen(true)} className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors">
+            <button onClick={() => setIsMenuOpen(true)} className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors select-none">
               <Menu size={24} />
             </button>
             <div className="flex items-center gap-2">
               <div className="bg-[#3057F2] p-2 rounded-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-white hidden sm:block">GigTrack <span className="text-[#3057F2]">Pro</span></h1>
+              <h1 className="text-xl font-bold tracking-tight text-white hidden sm:block select-none">GigTrack <span className="text-[#3057F2] select-none">Pro</span></h1>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            {isSyncing && <div className="flex items-center gap-2 text-[10px] font-bold text-white animate-pulse bg-[#24272D] px-3 py-1.5 rounded-full border border-[#31333B]"><Cloud size={12}/> SYNC...</div>}
-            {isImporting && <div className="flex items-center gap-2 text-[10px] font-bold text-white animate-pulse bg-[#24272D] px-3 py-1.5 rounded-full border border-[#31333B]"><Upload size={12}/> IMPORTANDO...</div>}
+            {isSyncing && <div className="flex items-center gap-2 text-[10px] font-bold text-white animate-pulse bg-[#24272D] px-3 py-1.5 rounded-full border border-[#31333B] select-none"><Cloud size={12}/> SYNC...</div>}
+            {isImporting && <div className="flex items-center gap-2 text-[10px] font-bold text-white animate-pulse bg-[#24272D] px-3 py-1.5 rounded-full border border-[#31333B] select-none"><Upload size={12}/> IMPORTANDO...</div>}
             <input
               ref={importInputRef}
               type="file"
@@ -958,14 +958,14 @@ const App: React.FC = () => {
                 }
               }}
               disabled={isImporting}
-              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors disabled:opacity-50"
+              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors disabled:opacity-50 select-none"
               title="Importar Excel/CSV"
             >
               <Upload size={20} />
             </button>
             <button 
               onClick={() => setIsAuthModalOpen(true)} 
-              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors"
+              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors select-none"
               title="Minha Conta"
             >
               <User size={20} className="text-white" />
@@ -978,7 +978,7 @@ const App: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40">
             <Loader2 className="w-10 h-10 text-[#3057F2] animate-spin mb-4" />
-            <p className="text-white font-bold uppercase tracking-widest text-[10px]">Carregando...</p>
+            <p className="text-white font-bold uppercase tracking-widest text-[10px] select-none">Carregando...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pb-32 lg:pb-8">
@@ -1043,7 +1043,7 @@ const App: React.FC = () => {
               {/* Resumo Financeiro fixo no desktop */}
               <section className="hidden lg:block mt-8 space-y-4 sticky top-24">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-widest">Resumo Financeiro</h3>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest select-none">Resumo Financeiro</h3>
                   <button onClick={() => setShowValues(!showValues)} className={`p-1.5 rounded-lg border transition-all ${showValues ? 'bg-[#24272D] border-[#31333B] text-white' : 'bg-[#3057F2]/10 border-[#3057F2]/20 text-[#3057F2]'}`}>
                     {showValues ? <Eye size={14} /> : <EyeOff size={14} />}
                   </button>
@@ -1078,10 +1078,10 @@ const App: React.FC = () => {
                           setIsModalOpen(true);
                         }
                       }} 
-                      className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/20 flex-shrink-0"
+                      className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/20 flex-shrink-0 select-none"
                     >
                       <Plus size={18} />
-                      <span>Novo Show</span>
+                      <span className="select-none">Novo Show</span>
                     </button>
                   )}
                 </div>
@@ -1103,6 +1103,7 @@ const App: React.FC = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full sm:w-64 pl-10 pr-4 py-2 bg-[#24272D] border border-[#31333B] rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-[#3057F2] transition-colors"
+                        onFocus={(e) => e.target.select()}
                       />
                     </div>
                     
@@ -1110,7 +1111,7 @@ const App: React.FC = () => {
                     <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => setFilterStatus('all')}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all select-none ${
                           filterStatus === 'all' 
                             ? 'bg-[#3057F2] text-white' 
                             : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
@@ -1120,7 +1121,7 @@ const App: React.FC = () => {
                       </button>
                       <button
                         onClick={() => setFilterStatus('pending')}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all select-none ${
                           filterStatus === 'pending' 
                             ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
                             : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
@@ -1130,7 +1131,7 @@ const App: React.FC = () => {
                       </button>
                       <button
                         onClick={() => setFilterStatus('paid')}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all select-none ${
                           filterStatus === 'paid' 
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                             : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
@@ -1148,10 +1149,10 @@ const App: React.FC = () => {
                               setIsMultiSelectMode(true);
                             }
                           }}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all"
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all select-none"
                         >
                           {!isMultiSelectMode && <Trash2 size={16} />}
-                          {isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}
+                          <span className="select-none">{isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}</span>
                         </button>
                       )}
                     </div>
@@ -1169,18 +1170,18 @@ const App: React.FC = () => {
                             setSelectedGigIds(new Set(filteredGigs.map(g => g.id)));
                           }
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#3057F2]/20 hover:bg-[#3057F2]/30 text-[#3057F2] border border-[#3057F2]/30 rounded-xl font-semibold text-sm transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-[#3057F2]/20 hover:bg-[#3057F2]/30 text-[#3057F2] border border-[#3057F2]/30 rounded-xl font-semibold text-sm transition-all select-none"
                       >
-                        {selectedGigIds.size === filteredGigs.length ? 'Desmarcar Todas' : 'Selecionar Todas'}
+                        <span className="select-none">{selectedGigIds.size === filteredGigs.length ? 'Desmarcar Todas' : 'Selecionar Todas'}</span>
                       </button>
                     )}
                     {isMultiSelectMode && selectedGigIds.size > 0 && (
                       <button
                         onClick={handleDeleteMultiple}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-all select-none"
                       >
                         <Trash2 size={16} />
-                        Excluir {selectedGigIds.size}
+                        <span className="select-none">Excluir {selectedGigIds.size}</span>
                       </button>
                     )}
                   </div>

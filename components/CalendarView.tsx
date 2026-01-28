@@ -65,12 +65,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
             onDateSelect(isSelected ? null : dateStr);
           }
         }}
-        className={`relative h-10 w-10 sm:h-12 sm:w-12 flex flex-col items-center justify-center rounded-xl transition-all hover:bg-[#1E1F25] ${
+        className={`relative h-10 w-10 sm:h-12 sm:w-12 flex flex-col items-center justify-center rounded-xl transition-all hover:bg-[#1E1F25] select-none ${
           isSelected ? 'bg-[#1E1F25] text-white ring-2 ring-[#3057F2] ring-offset-2 ring-offset-[#24272D] shadow-lg' : 
           isToday ? 'bg-[#1E1F25] text-white font-bold border border-[#31333B]' : 'text-white'
         }`}
       >
-        <span className="text-sm">{d}</span>
+        <span className="text-sm select-none">{d}</span>
         {dayGigs.length > 0 && !isSelected && (
           <div className="absolute bottom-1.5 flex gap-0.5">
             {dayGigs.slice(0, 3).map((g, idx) => (
@@ -89,14 +89,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
   const selectedDayGigs = selectedDate ? getGigsForDay(selectedDate) : [];
 
   return (
-    <div className="bg-[#24272D] border border-[#31333B] rounded-3xl p-5 shadow-xl">
+    <div className="bg-[#24272D] border border-[#31333B] rounded-3xl p-5 shadow-xl select-none">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-white font-bold capitalize text-lg">{monthName} {year}</h3>
+        <h3 className="text-white font-bold capitalize text-lg select-none">{monthName} {year}</h3>
         <div className="flex gap-1.5">
-          <button onClick={prevMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-white transition-colors bg-[#1E1F25]">
+          <button onClick={prevMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-white transition-colors bg-[#1E1F25] select-none">
             <ChevronLeft size={20} />
           </button>
-          <button onClick={nextMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-white transition-colors bg-[#1E1F25]">
+          <button onClick={nextMonth} className="p-2 hover:bg-[#1E1F25] rounded-xl text-white transition-colors bg-[#1E1F25] select-none">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -104,7 +104,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
       
       <div className="grid grid-cols-7 gap-1 mb-2">
         {weekDays.map(wd => (
-          <div key={wd} className="text-[10px] font-bold text-white text-center uppercase py-1">
+          <div key={wd} className="text-[10px] font-bold text-white text-center uppercase py-1 select-none">
             {wd}
           </div>
         ))}
@@ -117,10 +117,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
       {selectedDate && (
         <div className="mt-6 pt-6 border-t border-[#31333B] animate-in slide-in-from-top-2">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-xs text-white font-medium">Shows em <span className="text-white font-bold">{new Date(selectedDate).toLocaleDateString('pt-BR')}</span></span>
+            <span className="text-xs text-white font-medium select-none">Shows em <span className="text-white font-bold select-none">{new Date(selectedDate).toLocaleDateString('pt-BR')}</span></span>
             <button 
               onClick={() => onDateSelect(null)}
-              className="text-[10px] uppercase font-bold text-rose-400 hover:text-rose-300 transition-colors"
+              className="text-[10px] uppercase font-bold text-rose-400 hover:text-rose-300 transition-colors select-none"
             >
               Limpar Filtro
             </button>
@@ -129,18 +129,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
           <div className="space-y-2">
             {selectedDayGigs.length > 0 ? (
               selectedDayGigs.map(gig => (
-                <div key={gig.id} className="bg-[#1E1F25] border border-[#31333B] rounded-2xl p-3 flex flex-col gap-2">
+                <div key={gig.id} className="bg-[#1E1F25] border border-[#31333B] rounded-2xl p-3 flex flex-col gap-2 select-none">
                   <div className="flex justify-between items-start gap-2">
-                    <h4 className="font-bold text-sm text-white leading-tight">{gig.title}</h4>
-                    <span className="text-xs font-black text-white whitespace-nowrap">{formatCurrency(gig.value)}</span>
+                    <h4 className="font-bold text-sm text-white leading-tight select-none">{gig.title}</h4>
+                    <span className="text-xs font-black text-white whitespace-nowrap select-none">{formatCurrency(gig.value)}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] text-white">
-                    <span className="flex items-center gap-1 font-semibold uppercase tracking-wider">
+                  <div className="flex items-center gap-3 text-[10px] text-white select-none">
+                    <span className="flex items-center gap-1 font-semibold uppercase tracking-wider select-none">
                       <Music size={10} className="text-white" />
                       {gig.band_name || 'Freelance'}
                     </span>
                     {gig.location && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 select-none">
                         <MapPin size={10} />
                         {gig.location}
                       </span>
@@ -149,7 +149,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ gigs, selectedDate, onDateS
                 </div>
               ))
             ) : (
-              <p className="text-[11px] text-white italic text-center py-2">Nenhum evento registrado nesta data.</p>
+              <p className="text-[11px] text-white italic text-center py-2 select-none">Nenhum evento registrado nesta data.</p>
             )}
           </div>
         </div>

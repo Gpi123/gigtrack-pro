@@ -59,11 +59,11 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 select-none">
       <div className="bg-[#24272D] border border-[#31333B] w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
         <div className="px-6 py-4 border-b border-[#31333B] flex justify-between items-center bg-[#24272D]">
-          <h2 className="text-xl font-bold text-white">{initialData ? 'Editar Compromisso' : 'Novo Show / Evento'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-[#1E1F25] rounded-full text-white transition-colors">
+          <h2 className="text-xl font-bold text-white select-none">{initialData ? 'Editar Compromisso' : 'Novo Show / Evento'}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-[#1E1F25] rounded-full text-white transition-colors select-none">
             <X size={20} />
           </button>
         </div>
@@ -71,7 +71,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
         <form id="gig-form" onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           {/* Título do Evento */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
+            <label className="text-xs font-bold text-white uppercase flex items-center gap-1 select-none">
               <Music size={12} /> Título do Evento
             </label>
             <input 
@@ -86,7 +86,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
 
           {/* Valor */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
+            <label className="text-xs font-bold text-white uppercase flex items-center gap-1 select-none">
               <DollarSign size={12} /> Valor (R$)
             </label>
             <input 
@@ -118,7 +118,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
 
           {/* Data */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-white uppercase">
+            <label className="text-xs font-bold text-white uppercase select-none">
               Data
             </label>
             <input 
@@ -138,7 +138,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
 
           {/* Local */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
+            <label className="text-xs font-bold text-white uppercase flex items-center gap-1 select-none">
               <MapPin size={12} /> Local
             </label>
             <input 
@@ -152,7 +152,7 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
 
           {/* Notas Adicionais */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
+            <label className="text-xs font-bold text-white uppercase flex items-center gap-1 select-none">
               <FileText size={12} /> Notas Adicionais
             </label>
             <textarea 
@@ -166,21 +166,21 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
 
           {/* Status Inicial do Pagamento */}
           <div className="space-y-1 pb-4">
-            <label className="text-xs font-bold text-white uppercase flex items-center gap-1">
+            <label className="text-xs font-bold text-white uppercase flex items-center gap-1 select-none">
               Status Inicial do Pagamento
             </label>
             <div className="grid grid-cols-2 gap-2 p-1 bg-[#1E1F25] border border-[#31333B] rounded-xl">
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, status: GigStatus.PENDING }))}
-                className={`py-2 rounded-lg text-sm font-semibold transition-all ${formData.status === GigStatus.PENDING ? 'bg-amber-500/20 text-amber-500 shadow-sm' : 'text-white hover:text-white'}`}
+                className={`py-2 rounded-lg text-sm font-semibold transition-all select-none ${formData.status === GigStatus.PENDING ? 'bg-amber-500/20 text-amber-500 shadow-sm' : 'text-white hover:text-white'}`}
               >
                 Pendente
               </button>
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, status: GigStatus.PAID }))}
-                className={`py-2 rounded-lg text-sm font-semibold transition-all ${formData.status === GigStatus.PAID ? 'bg-emerald-500/20 text-emerald-500 shadow-sm' : 'text-white hover:text-white'}`}
+                className={`py-2 rounded-lg text-sm font-semibold transition-all select-none ${formData.status === GigStatus.PAID ? 'bg-emerald-500/20 text-emerald-500 shadow-sm' : 'text-white hover:text-white'}`}
               >
                 Pago
               </button>
@@ -192,23 +192,23 @@ const GigModal: React.FC<GigModalProps> = ({ isOpen, onClose, onSubmit, initialD
           <button 
             type="button" 
             onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl border border-[#31333B] text-white font-semibold hover:bg-[#1E1F25] transition-colors"
+            className="flex-1 px-4 py-3 rounded-xl border border-[#31333B] text-white font-semibold hover:bg-[#1E1F25] transition-colors select-none"
           >
-            Cancelar
+            <span className="select-none">Cancelar</span>
           </button>
           <button 
             type="submit"
             form="gig-form"
             disabled={isLoading}
-            className="flex-[2] px-4 py-3 rounded-xl bg-[#3057F2] text-white font-bold hover:bg-[#2545D9] shadow-lg shadow-[#3057F2]/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-[2] px-4 py-3 rounded-xl bg-[#3057F2] text-white font-bold hover:bg-[#2545D9] shadow-lg shadow-[#3057F2]/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 select-none"
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Salvando...</span>
+                <span className="select-none">Salvando...</span>
               </>
             ) : (
-              initialData ? 'Salvar Alterações' : 'Confirmar Evento'
+              <span className="select-none">{initialData ? 'Salvar Alterações' : 'Confirmar Evento'}</span>
             )}
           </button>
         </div>
