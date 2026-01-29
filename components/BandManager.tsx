@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Users, Plus, X, Trash2, Loader2, Check, UserPlus, Copy, CheckCircle, QrCode } from 'lucide-react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
+import { Users, Plus, X, Trash2, Loader2, Check, UserPlus, Copy, CheckCircle, QrCode, ChevronDown } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { bandService } from '../services/bandService';
 import { Band, BandMember, BandInvite } from '../types';
@@ -27,6 +28,11 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [updatingRoleFor, setUpdatingRoleFor] = useState<string | null>(null);
+  const [openRoleDropdownFor, setOpenRoleDropdownFor] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number; openUp: boolean } | null>(null);
+  const roleTriggerRef = useRef<HTMLButtonElement>(null);
+  const roleDropdownPortalRef = useRef<HTMLDivElement>(null);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newBandName, setNewBandName] = useState('');
   const [newBandDescription, setNewBandDescription] = useState('');
@@ -179,6 +185,41 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
     myMember?.role === 'owner' ||
     myMember?.role === 'admin'
   );
+
+  // Posição do dropdown (portal) para não ser cortado pelo modal
+  useLayoutEffect(() => {
+    if (!openRoleDropdownFor) {
+      setDropdownPosition(null);
+      return;
+    }
+    const el = roleTriggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const DROPDOWN_HEIGHT = 80;
+    const DROPDOWN_WIDTH = 120;
+    const gap = 4;
+    const spaceBelow = window.innerHeight - rect.bottom - gap;
+    const openUp = spaceBelow < DROPDOWN_HEIGHT && rect.top > spaceBelow;
+    setDropdownPosition({
+      top: openUp ? rect.top - DROPDOWN_HEIGHT - gap : rect.bottom + gap,
+      left: Math.max(gap, Math.min(rect.right - DROPDOWN_WIDTH, window.innerWidth - DROPDOWN_WIDTH - gap)),
+      width: DROPDOWN_WIDTH,
+      openUp
+    });
+  }, [openRoleDropdownFor]);
+
+  // Fechar dropdown de role ao clicar fora (trigger ou portal)
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (roleTriggerRef.current?.contains(target) || roleDropdownPortalRef.current?.contains(target)) return;
+      setOpenRoleDropdownFor(null);
+    };
+    if (openRoleDropdownFor) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openRoleDropdownFor]);
 
   const handleRoleChange = async (memberUserId: string, newRole: 'admin' | 'member') => {
     if (!bandForActions || !canChangeRoles) return;
@@ -395,7 +436,6 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
               >
                 <Trash2 size={14} />
               </button>
-            )}
           </div>
           )}
 
@@ -469,18 +509,55 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
                                 )}
                               </span>
                             ) : canChangeRoles ? (
-                              <select
-                                value={member.role === 'admin' ? 'admin' : 'member'}
-                                onChange={(e) => handleRoleChange(member.user_id, e.target.value as 'admin' | 'member')}
-                                disabled={updatingRoleFor === member.user_id}
-                                className="text-[10px] bg-[#1E1F25] border border-[#31333B] rounded-lg px-2 py-1 text-white/90 focus:outline-none focus:border-[#3057F2] flex-shrink-0"
-                              >
-                                {ROLES.map((r) => (
-                                  <option key={r.value} value={r.value}>
-                                    {r.label}
-                                  </option>
-                                ))}
-                              </select>
+                              <div className="relative flex-shrink-0" ref={roleDropdownRef}>
+                                <button
+                                  ref={openRoleDropdownFor === member.user_id ? roleTriggerRef : undefined}
+                                  type="button"
+                                  onClick={() => setOpenRoleDropdownFor(openRoleDropdownFor === member.user_id ? null : member.user_id)}
+                                  disabled={updatingRoleFor === member.user_id}
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-[#1E1F25] border border-[#31333B] rounded-xl hover:bg-[#24272D] hover:border-white/20 focus:outline-none focus:border-[#3057F2] transition-colors disabled:opacity-50 min-w-[88px] justify-between"
+                                >
+                                  <span className="select-none">
+                                    {member.role === 'admin' ? 'Editor' : 'Membro'}
+                                  </span>
+                                  <ChevronDown size={12} className={`text-white/60 transition-transform ${openRoleDropdownFor === member.user_id ? 'rotate-180' : ''}`} />
+                                </button>
+                                {openRoleDropdownFor === member.user_id && dropdownPosition && typeof document !== 'undefined' && ReactDOM.createPortal(
+                                  <div
+                                    ref={roleDropdownPortalRef}
+                                    className="fixed z-[300] bg-[#24272D] border border-[#31333B] rounded-xl shadow-xl overflow-hidden min-w-[120px]"
+                                    style={{
+                                      top: dropdownPosition.top,
+                                      left: dropdownPosition.left,
+                                      width: dropdownPosition.width
+                                    }}
+                                  >
+                                    {ROLES.map((r) => {
+                                      const memberForRole = members.find(m => m.user_id === openRoleDropdownFor);
+                                      return (
+                                        <button
+                                          key={r.value}
+                                          type="button"
+                                          onClick={() => {
+                                            if (openRoleDropdownFor) {
+                                              handleRoleChange(openRoleDropdownFor, r.value);
+                                              setOpenRoleDropdownFor(null);
+                                            }
+                                          }}
+                                          className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors select-none ${
+                                            memberForRole?.role === r.value
+                                              ? 'bg-[#3057F2]/10 text-[#3057F2]'
+                                              : 'text-white hover:bg-[#1E1F25]'
+                                          }`}
+                                        >
+                                          {r.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>,
+                                  document.body
+                                )}
+                              </div>
                             ) : (
                               <span className="text-[10px] text-white/50 uppercase flex-shrink-0 select-none">
                                 {member.role === 'admin' ? 'Editor' : 'Membro'}

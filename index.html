@@ -38,6 +38,26 @@
             background: #f1f1f1;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        /* Scrollbars minimalistas - padrão visual do sistema (tema escuro) */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #31333B #1E1F25;
+        }
+        *::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        *::-webkit-scrollbar-track {
+            background: #1E1F25;
+            border-radius: 3px;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: #31333B;
+            border-radius: 3px;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+            background: #3d3f48;
+        }
     </style>
 <script type="importmap">
 {
