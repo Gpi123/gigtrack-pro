@@ -54,7 +54,7 @@ const GigList: React.FC<GigListProps> = ({
           return (
             <div
               key={gig.id}
-              className="group bg-[#24272D] border border-[#31333B] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 select-none"
+              className="group bg-[#24272D] border border-[#31333B] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 select-none shadow-xl"
             >
               <div className="flex flex-col items-center justify-center w-14 h-14 rounded-xl flex-shrink-0 bg-[#1E1F25] text-white">
                 <span className="text-[10px] uppercase font-bold select-none">
@@ -84,7 +84,7 @@ const GigList: React.FC<GigListProps> = ({
         return (
           <div
             key={gig.id}
-            className={`group bg-[#24272D] border transition-all hover:bg-[#1E1F25] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 select-none ${
+            className={`group bg-[#24272D] border transition-all hover:bg-[#1E1F25] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 select-none shadow-xl ${
               isMultiSelectMode && isSelected ? 'border-[#3057F2] bg-[#1E1F25]' :
               gig.status === GigStatus.PAID ? 'border-emerald-500/20 opacity-90' : 'border-[#31333B]'
             }`}

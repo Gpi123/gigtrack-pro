@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Plus, LayoutDashboard, Calendar, DollarSign, Menu, Eye, EyeOff, Cloud, Loader2, User, Upload, Trash2, Search, Filter } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar, DollarSign, Eye, EyeOff, Cloud, Loader2, User, Upload, Trash2, Search, Filter } from 'lucide-react';
 import { Gig, GigStatus, FinancialStats, Band } from './types';
 import { gigService } from './services/gigService';
 import { importService } from './services/importService';
@@ -41,6 +41,7 @@ const App: React.FC = () => {
 
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [activePeriodFilter, setActivePeriodFilter] = useState<'week' | 'month' | 'year' | 'custom' | null>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -962,16 +963,8 @@ const App: React.FC = () => {
 
       <header className="bg-[#24272D]/80 backdrop-blur-md border-b border-[#31333B] sticky top-0 z-40 select-none">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsMenuOpen(true)} className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors select-none">
-              <Menu size={24} />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#3057F2] p-2 rounded-lg">
-                <Calendar className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-xl font-bold tracking-tight text-white hidden sm:block select-none">GigTrack <span className="text-[#3057F2] select-none">Pro</span></h1>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-white select-none">GigTrack <span className="text-[#3057F2] select-none">Pro</span></h1>
           </div>
           
           <div className="flex items-center gap-3">
@@ -993,17 +986,22 @@ const App: React.FC = () => {
                 }
               }}
               disabled={isImporting}
-              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors disabled:opacity-50 select-none"
+              className="flex items-center gap-2 px-2 py-2 hover:bg-[#24272D] rounded-lg text-white transition-colors disabled:opacity-50 select-none"
               title="Importar Excel/CSV"
             >
               <Upload size={20} />
+              <span className="hidden sm:inline text-sm font-medium">Importar planilha</span>
             </button>
             <button 
               onClick={() => setIsAuthModalOpen(true)} 
-              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors select-none"
+              className="p-2 hover:bg-[#24272D] rounded-lg text-white transition-colors select-none overflow-hidden rounded-full"
               title="Minha Conta"
             >
-              <User size={20} className="text-white" />
+              {userProfile?.avatar_url ? (
+                <img src={userProfile.avatar_url} alt="Perfil" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <User size={20} className="text-white" />
+              )}
             </button>
           </div>
         </div>
@@ -1025,17 +1023,19 @@ const App: React.FC = () => {
                 endDate={endDate}
                 onDateSelect={(date) => {
                   setSelectedCalendarDate(date);
-                  if (date) { setStartDate(''); setEndDate(''); }
+                  if (date) { setStartDate(''); setEndDate(''); setActivePeriodFilter(null); }
                 }}
                 onDateClick={(date) => {
                   setSelectedCalendarDate(null);
                   setStartDate('');
                   setEndDate('');
+                  setActivePeriodFilter(null);
                   setEditingGig(null);
                   setPreSelectedDate(date);
                   setIsModalOpen(true);
                 }}
                 onQuickFilter={(type) => {
+                  setActivePeriodFilter(type);
                   const today = new Date();
                   let start: Date;
                   let end: Date;
@@ -1065,11 +1065,13 @@ const App: React.FC = () => {
                   setSelectedCalendarDate(null);
                 }}
                 onCustomPeriod={(start, end) => {
+                  setActivePeriodFilter('custom');
                   setStartDate(start);
                   setEndDate(end);
                   setSelectedCalendarDate(null);
                 }}
-                onClear={() => { setStartDate(''); setEndDate(''); setSelectedCalendarDate(null); }}
+                onClear={() => { setStartDate(''); setEndDate(''); setSelectedCalendarDate(null); setActivePeriodFilter(null); }}
+                activePeriodFilter={activePeriodFilter}
                 showValues={showValues}
                 stats={stats}
                 gigCount={filteredGigs.length}
@@ -1083,15 +1085,15 @@ const App: React.FC = () => {
                     {showValues ? <Eye size={14} /> : <EyeOff size={14} />}
                   </button>
                 </div>
-                <SummaryCards stats={stats} showValues={showValues} />
+                <SummaryCards stats={stats} showValues={showValues} onFilterClick={setFilterStatus} filterStatus={filterStatus} />
               </section>
             </div>
 
             <div className="lg:col-span-8">
               <div className="flex flex-col gap-4 mb-8">
-                {/* Título e Botão Novo Show */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1">
+                {/* Barra: Agenda + Criar Banda + Novo Show (único CTA primário) */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex-1 min-w-0">
                     <AgendaSelector
                       selectedBandId={selectedBandId}
                       onBandSelect={setSelectedBandId}
@@ -1108,7 +1110,7 @@ const App: React.FC = () => {
                       }}
                     />
                   </div>
-                  {!isPeriodActive && !selectedCalendarDate && (!selectedBandId || isBandOwner) && (
+                  {(!selectedBandId || isBandOwner) && (
                     <button 
                       onClick={() => { 
                         if (!user) {
@@ -1119,23 +1121,19 @@ const App: React.FC = () => {
                           setIsModalOpen(true);
                         }
                       }} 
-                      className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/20 flex-shrink-0 select-none"
+                      className="bg-[#3057F2] hover:bg-[#2545D9] text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#3057F2]/25 flex-shrink-0 select-none"
                     >
-                      <Plus size={18} />
+                      <Plus size={20} />
                       <span className="select-none">Novo Show</span>
                     </button>
                   )}
                 </div>
                 
                 {/* Divider */}
-                {!isPeriodActive && !selectedCalendarDate && (
-                  <div className="border-t border-[#31333B] my-2" />
-                )}
+                <div className="border-t border-[#31333B] my-2" />
                 
-                {/* Busca e Filtros */}
-                {!isPeriodActive && !selectedCalendarDate && (
-                  <div className="flex flex-col sm:flex-row gap-3 w-full items-start sm:items-center">
-                    {/* Busca */}
+                {/* Busca e Filtros (secundários: outline/neutros; só Novo Show é primário) */}
+                <div className="flex flex-col sm:flex-row gap-3 w-full items-start sm:items-center">
                     <div className="relative flex-1 sm:flex-initial">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={18} />
                       <input
@@ -1143,39 +1141,37 @@ const App: React.FC = () => {
                         placeholder="Buscar shows..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full sm:w-64 pl-10 pr-4 py-2 bg-[#24272D] border border-[#31333B] rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-[#3057F2] transition-colors"
+                        className="w-full sm:w-64 pl-10 pr-4 py-2 bg-[#24272D] border border-[#31333B] rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-white/30 transition-colors"
                         onFocus={(e) => e.target.select()}
                       />
                     </div>
-                    
-                    {/* Filtro de Status e Excluir Várias */}
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2 flex-wrap items-center">
                       <button
                         onClick={() => setFilterStatus('all')}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all select-none ${
+                        className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all select-none ${
                           filterStatus === 'all' 
-                            ? 'bg-[#3057F2] text-white' 
-                            : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
+                            ? 'bg-[#3057F2]/10 text-[#3057F2] border border-[#3057F2]/40' 
+                            : 'bg-transparent border border-[#31333B] text-white/70 hover:text-white hover:border-white/20'
                         }`}
                       >
                         Todos
                       </button>
                       <button
                         onClick={() => setFilterStatus('pending')}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all select-none ${
+                        className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all select-none ${
                           filterStatus === 'pending' 
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
-                            : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
+                            : 'bg-transparent border border-[#31333B] text-white/70 hover:text-white hover:border-white/20'
                         }`}
                       >
                         Pendentes
                       </button>
                       <button
                         onClick={() => setFilterStatus('paid')}
-                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all select-none ${
+                        className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all select-none ${
                           filterStatus === 'paid' 
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                            : 'bg-[#24272D] border border-[#31333B] text-white hover:bg-[#1E1F25]'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                            : 'bg-transparent border border-[#31333B] text-white/70 hover:text-white hover:border-white/20'
                         }`}
                       >
                         Pagos
@@ -1190,17 +1186,16 @@ const App: React.FC = () => {
                               setIsMultiSelectMode(true);
                             }
                           }}
-                          className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-xl font-semibold text-sm transition-all select-none"
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white border border-[#31333B] hover:border-red-500/30 hover:bg-red-500/5 transition-all select-none"
                         >
-                          {!isMultiSelectMode && <Trash2 size={16} />}
-                          <span className="select-none">{isMultiSelectMode ? 'Cancelar' : 'Excluir Várias'}</span>
+                          {!isMultiSelectMode && <Trash2 size={14} />}
+                          <span className="select-none">{isMultiSelectMode ? 'Cancelar' : 'Excluir vários'}</span>
                         </button>
                       )}
                     </div>
                   </div>
-                )}
                 
-                {filteredGigs.length > 0 && !isPeriodActive && !selectedCalendarDate && isMultiSelectMode && (
+                {filteredGigs.length > 0 && isMultiSelectMode && (
                   <div className="flex flex-wrap gap-2">
                     {isMultiSelectMode && filteredGigs.length > 0 && (
                       <button
@@ -1274,7 +1269,7 @@ const App: React.FC = () => {
               {showValues ? <Eye size={16} /> : <EyeOff size={16} />}
             </button>
           </div>
-          <SummaryCards stats={stats} showValues={showValues} />
+          <SummaryCards stats={stats} showValues={showValues} onFilterClick={setFilterStatus} filterStatus={filterStatus} />
         </div>
       </footer>
 

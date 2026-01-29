@@ -13,6 +13,7 @@ interface CalendarWithFiltersProps {
   onQuickFilter: (type: 'week' | 'month' | 'year') => void;
   onCustomPeriod: (startDate: string, endDate: string) => void;
   onClear: () => void;
+  activePeriodFilter?: 'week' | 'month' | 'year' | 'custom' | null;
   showValues: boolean;
   stats: FinancialStats;
   gigCount: number;
@@ -28,10 +29,17 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
   onQuickFilter,
   onCustomPeriod,
   onClear,
+  activePeriodFilter = null,
   showValues,
   stats,
   gigCount
 }) => {
+  const periodBtn = (type: 'week' | 'month' | 'year') => {
+    const active = activePeriodFilter === type;
+    return active
+      ? 'bg-[#3057F2]/10 text-[#3057F2] border-[#3057F2]/40'
+      : 'bg-[#1E1F25] hover:bg-[#24272D] text-white border-[#31333B]';
+  };
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -148,33 +156,33 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
         {days}
       </div>
 
-      {/* Quick Filters */}
+      {/* Quick Filters (azul secundário no ativo; clicar no selecionado limpa) */}
       <div className="grid grid-cols-3 gap-2 mb-2">
         <button
-          onClick={() => onQuickFilter('week')}
-          className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
+          onClick={() => activePeriodFilter === 'week' ? onClear() : onQuickFilter('week')}
+          className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all border ${periodBtn('week')}`}
         >
           Esta Semana
         </button>
         <button
-          onClick={() => onQuickFilter('month')}
-          className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
+          onClick={() => activePeriodFilter === 'month' ? onClear() : onQuickFilter('month')}
+          className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all border ${periodBtn('month')}`}
         >
           Mês Atual
         </button>
         <button
-          onClick={() => onQuickFilter('year')}
-          className="px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
+          onClick={() => activePeriodFilter === 'year' ? onClear() : onQuickFilter('year')}
+          className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all border ${periodBtn('year')}`}
         >
           Ano Atual
         </button>
       </div>
-      
-      {/* Botão Personalizado */}
       <div className="mb-6">
         <button
-          onClick={() => setIsPeriodModalOpen(true)}
-          className="w-full px-3 py-2 bg-[#1E1F25] hover:bg-[#24272D] text-white text-xs font-semibold rounded-xl transition-all border border-[#31333B]"
+          onClick={() => activePeriodFilter === 'custom' ? onClear() : setIsPeriodModalOpen(true)}
+          className={`w-full px-3 py-2 text-xs font-semibold rounded-xl transition-all border ${
+            activePeriodFilter === 'custom' ? 'bg-[#3057F2]/10 text-[#3057F2] border-[#3057F2]/40' : 'bg-[#1E1F25] hover:bg-[#24272D] text-white border-[#31333B]'
+          }`}
         >
           Personalizado
         </button>
@@ -198,7 +206,7 @@ const CalendarWithFilters: React.FC<CalendarWithFiltersProps> = ({
             </button>
           </div>
 
-          <div className="bg-[#1E1F25] border border-[#31333B] rounded-2xl p-4 space-y-3">
+          <div className="bg-[#1E1F25] border border-[#31333B] rounded-2xl p-4 space-y-3 shadow-xl">
             <div className="flex items-center justify-between border-b border-[#31333B] pb-2">
               <span className="text-[10px] font-bold text-white uppercase">Resultado do Período</span>
               <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#24272D] rounded-full">

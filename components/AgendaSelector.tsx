@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, ChevronDown, Users, User, Plus, UserPlus, X, Loader2, Settings, Trash2, Pencil, AlertTriangle } from 'lucide-react';
+import { ChevronDown, Users, User, Plus, UserPlus, X, Loader2, Settings, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { bandService } from '../services/bandService';
 import { Band } from '../types';
 import { useToast } from './Toast';
@@ -89,15 +89,10 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
     }
   };
 
+  // Título sempre mostra o contexto (agenda pessoal ou banda), nunca "Filtro de Período" ou "Data Selecionada"
   const getCurrentAgendaName = () => {
-    if (isPeriodActive) return 'Filtro de Período';
-    if (selectedCalendarDate) return 'Data Selecionada';
     if (selectedBandId) {
-      // Priorizar o nome passado como prop (cache) para exibição instantânea
-      if (selectedBandName) {
-        return selectedBandName;
-      }
-      // Fallback para buscar no array local
+      if (selectedBandName) return selectedBandName;
       const band = bands.find(b => b.id === selectedBandId);
       return band ? band.name : 'Banda';
     }
@@ -113,7 +108,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-3 text-2xl font-bold text-white hover:opacity-80 transition-opacity relative select-none"
         >
-          <LayoutDashboard size={24} className="text-white flex-shrink-0" />
+          {selectedBandId ? <Users size={24} className="text-white flex-shrink-0" /> : <User size={24} className="text-white flex-shrink-0" />}
           <span className="whitespace-nowrap select-none">{getCurrentAgendaName()}</span>
           {isSwitching && (
             <Loader2 size={16} className="text-[#3057F2] animate-spin ml-2" />
@@ -124,11 +119,11 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
           />
         </button>
 
-        {/* Botão de Ajustes - apenas o owner da banda vê (convidar, editar, excluir banda) */}
+        {/* Botão de Ajustes - secundário (convite/edição está dentro do modal) */}
         {selectedBandId && selectedBand && isBandOwner && (
           <button
             onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3057F2] hover:bg-[#2545D9] text-white text-sm font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-[#1E1F25] border border-[#31333B] hover:border-[#3057F2]/40 transition-colors"
             title="Ajustes da banda"
           >
             <Settings size={16} />
@@ -191,35 +186,19 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                 </div>
               )}
 
-              {/* Ações */}
-              <div className="border-t border-[#31333B] p-2 space-y-1">
-                <button
-                  onClick={() => {
-                    setShowCreateModal(true);
-                    setIsOpen(false);
-                  }}
-                  className="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-[#1E1F25] rounded-lg transition-colors text-white select-none"
-                >
-                  <Plus size={18} className="text-[#3057F2]" />
-                  <span className="font-medium select-none">Criar Banda</span>
-                </button>
-
-                {selectedBand && isBandOwner && (
-                  <button
-                    onClick={() => {
-                      setShowInviteModal(true);
-                      setIsOpen(false);
-                    }}
-                    className="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-[#1E1F25] rounded-lg transition-colors text-white select-none"
-                  >
-                    <UserPlus size={18} className="text-[#3057F2]" />
-                    <span className="font-medium select-none">Convidar Usuários</span>
-                  </button>
-                )}
-              </div>
+              {/* Convidar Usuários removido do dropdown (está em Ajustes) */}
             </div>
           </div>
         )}
+        {/* Criar Banda: fora do dropdown, sempre visível na barra */}
+        <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-[#1E1F25] border border-[#31333B] hover:border-white/20 transition-colors select-none"
+            title="Criar nova banda"
+          >
+            <Plus size={16} />
+            <span className="select-none">Criar Banda</span>
+          </button>
       </div>
 
       {/* Modal de Criar Banda */}

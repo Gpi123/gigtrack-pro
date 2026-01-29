@@ -9,7 +9,7 @@ interface EmptyStateProps {
 const EmptyState: React.FC<EmptyStateProps> = ({ onAddClick, message }) => {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center select-none">
-      <div className="bg-[#24272D] border border-[#31333B] rounded-3xl p-8 mb-6 max-w-md">
+      <div className="bg-[#24272D] border border-[#31333B] rounded-3xl p-8 mb-6 max-w-md shadow-xl">
         <div className="bg-[#3057F2]/10 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
           <Calendar className="w-12 h-12 text-[#3057F2]" />
         </div>
