@@ -586,8 +586,7 @@ const App: React.FC = () => {
     try {
       setIsSyncing(true);
       if (gig.id) {
-        const isPersonalOverride = !selectedBandId && gig.band_id;
-        const updatedGig = await gigService.updateGig(gig.id, gig, isPersonalOverride);
+        const updatedGig = await gigService.updateGig(gig.id, gig);
         updateGigInState(updatedGig);
         toast.success('Show atualizado com sucesso!');
       } else {
@@ -636,27 +635,21 @@ const App: React.FC = () => {
     
     const gig = gigs.find(g => g.id === deleteConfirmId);
     const gigTitle = gig?.title || 'este show';
-    const isPersonalOverride = !selectedBandId && !!gig?.band_id;
-    
     const deletedGig = gig;
     setGigs(prevGigs => prevGigs.filter(g => g.id !== deleteConfirmId));
     
     try {
       setIsSyncing(true);
-      await gigService.deleteGig(deleteConfirmId, isPersonalOverride);
-      if (isPersonalOverride) {
-        toast.success(`"${gigTitle}" removido da sua agenda.`);
-      } else {
-        toast.showToast(`"${gigTitle}" excluído com sucesso!`, 'success', 3000, () => {
-          if (deletedGig) {
-            gigService.createGig(deletedGig, selectedBandId).then((newGig) => {
-              setGigs(prevGigs => [...prevGigs, newGig].sort((a, b) =>
-                a.date.localeCompare(b.date)
-              ));
-            });
-          }
-        });
-      }
+      await gigService.deleteGig(deleteConfirmId);
+      toast.showToast(`"${gigTitle}" excluído com sucesso!`, 'success', 3000, () => {
+        if (deletedGig) {
+          gigService.createGig(deletedGig, selectedBandId).then((newGig) => {
+            setGigs(prevGigs => [...prevGigs, newGig].sort((a, b) =>
+              a.date.localeCompare(b.date)
+            ));
+          });
+        }
+      });
     } catch (error: any) {
       console.error('Erro ao excluir show:', error);
       // Reverter mudança otimista em caso de erro
@@ -706,11 +699,7 @@ const App: React.FC = () => {
     
     try {
       setIsSyncing(true);
-      await Promise.all(idsToDelete.map(id => {
-        const g = gigs.find(x => x.id === id);
-        const isPersonalOverride = !selectedBandId && !!g?.band_id;
-        return gigService.deleteGig(id, isPersonalOverride);
-      }));
+      await Promise.all(idsToDelete.map(id => gigService.deleteGig(id)));
       toast.success(`${idsToDelete.length} evento(s) excluído(s) com sucesso!`);
     } catch (error: any) {
       console.error('Erro ao excluir eventos:', error);
@@ -758,8 +747,7 @@ const App: React.FC = () => {
     updateGigInState(optimisticGig);
 
     try {
-      const isPersonalOverride = !selectedBandId && !!gig.band_id;
-      const updatedGig = await gigService.toggleGigStatus(id, gig.status, isPersonalOverride);
+      const updatedGig = await gigService.toggleGigStatus(id, gig.status);
       updateGigInState(updatedGig);
       toast.success(`Status alterado para ${newStatus === GigStatus.PAID ? 'Pago' : 'Pendente'}`);
     } catch (error: any) {
