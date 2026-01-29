@@ -60,6 +60,7 @@ const App: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [bandsCache, setBandsCache] = useState<Band[]>([]);
   const [isSwitchingAgenda, setIsSwitchingAgenda] = useState(false);
+  const [personalGigsForSummary, setPersonalGigsForSummary] = useState<Gig[] | null>(null);
   const toast = useToast();
 
   const selectedBand = useMemo(() => (selectedBandId ? bandsCache.find(b => b.id === selectedBandId) ?? null : null), [selectedBandId, bandsCache]);
@@ -230,6 +231,16 @@ const App: React.FC = () => {
       }
     };
   }, [user, selectedBandId, toast]);
+
+  // Quando membro está na agenda da banda: carregar gigs pessoais só para o resumo financeiro (cards sempre mostram "meus" valores)
+  useEffect(() => {
+    if (!user) return;
+    if (selectedBandId && !isBandOwner) {
+      gigService.fetchGigs(null).then(setPersonalGigsForSummary).catch(() => setPersonalGigsForSummary([]));
+    } else {
+      setPersonalGigsForSummary(null);
+    }
+  }, [user, selectedBandId, isBandOwner]);
 
   // Função para processar escolha do onboarding
   const handleOnboardingComplete = async (choice: 'personal' | 'band', bandName?: string) => {
@@ -801,15 +812,43 @@ const App: React.FC = () => {
     return result;
   }, [gigs, selectedCalendarDate, startDate, endDate, isPeriodActive, filterStatus, searchQuery]);
 
+  // Mesmo filtro aplicado aos gigs pessoais (usado só para stats quando membro vê agenda da banda)
+  const filteredPersonalGigs = useMemo(() => {
+    const source = personalGigsForSummary ?? [];
+    let result = [...source].sort((a, b) => a.date.localeCompare(b.date));
+    if (isPeriodActive) {
+      result = result.filter(gig => gig.date >= startDate && gig.date <= endDate);
+    } else if (selectedCalendarDate) {
+      result = result.filter(gig => gig.date === selectedCalendarDate);
+    }
+    if (filterStatus !== 'all') {
+      result = result.filter(gig => 
+        filterStatus === 'pending' ? gig.status === GigStatus.PENDING : gig.status === GigStatus.PAID
+      );
+    }
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(gig => 
+        gig.title?.toLowerCase().includes(query) ||
+        gig.band_name?.toLowerCase().includes(query) ||
+        gig.location?.toLowerCase().includes(query) ||
+        gig.notes?.toLowerCase().includes(query)
+      );
+    }
+    return result;
+  }, [personalGigsForSummary, selectedCalendarDate, startDate, endDate, isPeriodActive, filterStatus, searchQuery]);
+
+  // Resumo financeiro: agenda pessoal ou owner na banda = stats da lista atual; membro na banda = stats da agenda pessoal dele
+  const gigsForStats = (selectedBandId && !isBandOwner && personalGigsForSummary !== null) ? filteredPersonalGigs : filteredGigs;
   const stats = useMemo<FinancialStats>(() => {
-    return filteredGigs.reduce((acc, gig) => {
+    return gigsForStats.reduce((acc, gig) => {
       const val = Number(gig.value) || 0;
       if (gig.status === GigStatus.PAID) acc.totalReceived += val;
       else acc.totalPending += val;
       acc.overallTotal += val;
       return acc;
     }, { totalReceived: 0, totalPending: 0, overallTotal: 0 });
-  }, [filteredGigs]);
+  }, [selectedBandId, isBandOwner, personalGigsForSummary, filteredPersonalGigs, filteredGigs]);
 
 
   const handleExportBackup = () => {
