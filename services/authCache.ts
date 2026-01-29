@@ -1,4 +1,4 @@
-// Cache de autenticação para evitar múltiplas chamadas simultâneas
+// Cache de autenticação: getSession() primeiro (rápido, memória) e getUser() só quando necessário
 import { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
@@ -8,7 +8,7 @@ interface AuthCache {
   promise: Promise<{ data: { user: User | null } }> | null;
 }
 
-const CACHE_DURATION = 5000; // 5 segundos
+const CACHE_DURATION = 30_000; // 30 segundos (getSession é rápido; getUser só quando session ausente)
 let authCache: AuthCache = {
   user: null,
   timestamp: 0,
@@ -18,12 +18,24 @@ let authCache: AuthCache = {
 export const getCachedUser = async (): Promise<User | null> => {
   const now = Date.now();
   
-  // Se temos um cache válido, retornar imediatamente
+  // Cache em memória válido: retornar imediatamente
   if (authCache.user && (now - authCache.timestamp) < CACHE_DURATION) {
     return authCache.user;
   }
   
-  // Se já há uma requisição em andamento, aguardar ela
+  // Rápido: ler sessão da memória/storage (sem rede). Só chamar getUser() se não houver sessão.
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      authCache.user = session.user;
+      authCache.timestamp = now;
+      return session.user;
+    }
+  } catch (_) {
+    // getSession falhou, seguir para getUser()
+  }
+  
+  // Se já há uma requisição getUser em andamento, aguardar
   if (authCache.promise) {
     const result = await authCache.promise;
     authCache.user = result.data.user;
@@ -32,7 +44,7 @@ export const getCachedUser = async (): Promise<User | null> => {
     return authCache.user;
   }
   
-  // Criar nova requisição
+  // Sessão ausente: validar com o servidor (lento, evite no hot path)
   authCache.promise = supabase.auth.getUser();
   try {
     const result = await authCache.promise;

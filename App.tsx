@@ -237,7 +237,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     if (selectedBandId && !isBandOwner) {
-      gigService.fetchGigs(null).then(setPersonalGigsForSummary).catch(() => setPersonalGigsForSummary([]));
+      gigService.fetchGigs(null, user.id).then(setPersonalGigsForSummary).catch(() => setPersonalGigsForSummary([]));
     } else {
       setPersonalGigsForSummary(null);
     }
@@ -477,7 +477,7 @@ const App: React.FC = () => {
       }
       
       const fetchStart = performance.now();
-      const data = await gigService.fetchGigs(selectedBandId);
+      const data = await gigService.fetchGigs(selectedBandId, user?.id ?? null);
       const fetchTime = performance.now() - fetchStart;
       
       console.log(`📦 [PERF] fetchGigs retornou - ${fetchTime.toFixed(2)}ms`, {
@@ -538,7 +538,7 @@ const App: React.FC = () => {
             // Só atualizar se houver mudanças reais
             return hasChanges ? updatedGigs : prevGigs;
           });
-        }, selectedBandId);
+        }, { bandId: selectedBandId, userId: user?.id ?? null });
         const subscribeTime = performance.now() - subscribeStart;
         console.log(`📡 [PERF] Subscription configurada - ${subscribeTime.toFixed(2)}ms`);
       }
@@ -871,7 +871,7 @@ const App: React.FC = () => {
       const newGigs = importService.convertToGigs(rows, user.id);
       
       // Show preview
-      setImportPreviewGigs(newGigs);
+      setImportPreviewGigs(newGigs as Gig[]);
       setImportPreviewOpen(true);
       setIsImporting(false); // Stop loading when showing preview
     } catch (error: any) {

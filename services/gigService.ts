@@ -3,19 +3,28 @@ import { Gig, GigStatus } from '../types';
 import { getCachedUser } from './authCache';
 
 export const gigService = {
-  // Fetch all gigs for the current user or a specific band
-  fetchGigs: async (bandId?: string | null): Promise<Gig[]> => {
+  // Fetch all gigs for the current user or a specific band.
+  // userIdFromCaller opcional: quando passado pelo App, evita getCachedUser() e deixa a troca de agenda instantânea.
+  fetchGigs: async (bandId?: string | null, userIdFromCaller?: string | null): Promise<Gig[]> => {
     const startTime = performance.now();
     console.log(`🔍 [PERF] fetchGigs INICIADO - bandId: ${bandId || 'null (pessoal)'}`, {
       timestamp: new Date().toISOString()
     });
 
-    const authStart = performance.now();
-    const user = await getCachedUser();
-    const authTime = performance.now() - authStart;
-    console.log(`🔐 [PERF] Auth.getUser() (cached) - ${authTime.toFixed(2)}ms`);
-
-    if (!user) throw new Error('User not authenticated');
+    let uid: string | null = null;
+    let authTime = 0;
+    if (!bandId) {
+      if (userIdFromCaller) {
+        uid = userIdFromCaller;
+      } else {
+        const authStart = performance.now();
+        const user = await getCachedUser();
+        authTime = performance.now() - authStart;
+        console.log(`🔐 [PERF] Auth.getUser() (cached) - ${authTime.toFixed(2)}ms`);
+        if (!user) throw new Error('User not authenticated');
+        uid = user.id;
+      }
+    }
 
     if (bandId) {
       // Buscar apenas gigs da banda específica
@@ -57,7 +66,7 @@ export const gigService = {
       const { data, error } = await supabase
         .from('gigs')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', uid!)
         .is('band_id', null)
         .order('date', { ascending: true });
       const queryTime = performance.now() - queryStart;
@@ -164,13 +173,22 @@ export const gigService = {
     return gigService.updateGig(id, { status: newStatus });
   },
 
-  // Subscribe to real-time changes
-  subscribeToGigs: async (callback: (gigs: Gig[]) => void, bandId?: string | null) => {
-    const user = await getCachedUser();
-    if (!user) return null;
+  // Subscribe to real-time changes. opts.userId evita getCachedUser() quando passado pelo App.
+  subscribeToGigs: async (
+    callback: (gigs: Gig[]) => void,
+    opts?: { bandId?: string | null; userId?: string | null }
+  ) => {
+    const bandId = opts?.bandId ?? null;
+    const userIdFromCaller = opts?.userId ?? null;
+    let uid: string | null = userIdFromCaller;
+    if (!uid) {
+      const user = await getCachedUser();
+      if (!user) return null;
+      uid = user.id;
+    }
     
     // Criar filtro baseado no contexto (pessoal ou banda)
-    const channelName = `gigs_changes_${bandId || 'personal'}_${user.id}_${Date.now()}`;
+    const channelName = `gigs_changes_${bandId || 'personal'}_${uid}_${Date.now()}`;
     
     const channel = supabase
       .channel(channelName);
@@ -217,7 +235,7 @@ export const gigService = {
           event: '*',
           schema: 'public',
           table: 'gigs',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${uid}`
         },
         async (payload) => {
           const newGig = payload.new as Gig | null;
@@ -227,7 +245,7 @@ export const gigService = {
 
           console.log('🎵 Realtime event (personal gig):', payload.eventType);
           try {
-            const gigs = await gigService.fetchGigs(null);
+            const gigs = await gigService.fetchGigs(null, uid);
             callback(gigs);
           } catch (error) {
             console.error('❌ Erro ao recarregar gigs após mudança realtime:', error);
@@ -242,8 +260,7 @@ export const gigService = {
       } else if (status === 'CHANNEL_ERROR') {
         console.error('❌ Erro na subscription de realtime:', status);
       } else if (status === 'CLOSED') {
-        console.warn('⚠️ Subscription fechada inesperadamente para', bandId || 'personal');
-        // Não logar CLOSED como info normal, apenas como warning se for inesperado
+        // CLOSED é esperado ao trocar de agenda (removeChannel); não logar como warning
       } else {
         // Logar outros status apenas em desenvolvimento
         if (process.env.NODE_ENV === 'development') {
