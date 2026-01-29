@@ -9,16 +9,24 @@ import { getCachedUser } from '../services/authCache';
 interface BandManagerProps {
   onBandSelect: (bandId: string | null) => void;
   selectedBandId: string | null;
-  hideBandSelector?: boolean; // Esconder seletor de bandas quando usado em modal de convite
+  hideBandSelector?: boolean;
+  /** Quando no modal Ajustes: banda já conhecida; mostra seção Membros desde o início com loading dentro */
+  bandFromParent?: Band | null;
 }
 
-const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId, hideBandSelector = false }) => {
+const ROLES: { value: 'admin' | 'member'; label: string }[] = [
+  { value: 'admin', label: 'Editor' },
+  { value: 'member', label: 'Membro' }
+];
+
+const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId, hideBandSelector = false, bandFromParent = null }) => {
   const [bands, setBands] = useState<Band[]>([]);
   const [members, setMembers] = useState<BandMember[]>([]);
   const [invites, setInvites] = useState<BandInvite[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [updatingRoleFor, setUpdatingRoleFor] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newBandName, setNewBandName] = useState('');
   const [newBandDescription, setNewBandDescription] = useState('');
@@ -63,21 +71,27 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
     }
   }, [bands, selectedBandId]);
 
+  // No modal Ajustes: usar banda do parent para exibir e carregar desde o início
   useEffect(() => {
-    if (selectedBand) {
-      // Sempre recarregar quando selectedBand mudar ou quando usado no modal
-      // Usar debounce para evitar múltiplas chamadas
+    if (hideBandSelector && bandFromParent && selectedBandId === bandFromParent.id && !selectedBand) {
+      setSelectedBand(bandFromParent);
+    }
+  }, [hideBandSelector, bandFromParent, selectedBandId, selectedBand]);
+
+  const displayBand = (hideBandSelector && bandFromParent) ? bandFromParent : selectedBand;
+  const bandIdToLoad = displayBand?.id ?? selectedBand?.id;
+
+  useEffect(() => {
+    if (bandIdToLoad) {
       const timeoutId = setTimeout(() => {
-        loadBandDetails(selectedBand.id);
-      }, 100);
-      
+        loadBandDetails(bandIdToLoad);
+      }, hideBandSelector && bandFromParent ? 0 : 100);
       return () => clearTimeout(timeoutId);
     } else {
-      // Limpar dados quando não há banda selecionada
       setMembers([]);
       setInvites([]);
     }
-  }, [selectedBand?.id, hideBandSelector]); // Recarregar quando banda mudar ou quando entrar no modal
+  }, [bandIdToLoad, hideBandSelector, bandFromParent?.id]);
 
   const loadBands = async () => {
     // Se já temos bandas e estamos no modal, não recarregar
@@ -158,14 +172,37 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
     }
   };
 
+  const bandForActions = displayBand ?? selectedBand;
+  const myMember = bandForActions ? members.find(m => m.user_id === currentUserId) : null;
+  const canChangeRoles = !!bandForActions && (
+    bandForActions.owner_id === currentUserId ||
+    myMember?.role === 'owner' ||
+    myMember?.role === 'admin'
+  );
+
+  const handleRoleChange = async (memberUserId: string, newRole: 'admin' | 'member') => {
+    if (!bandForActions || !canChangeRoles) return;
+    if (bandForActions.owner_id === memberUserId) return;
+    try {
+      setUpdatingRoleFor(memberUserId);
+      await bandService.updateMemberRole(bandForActions.id, memberUserId, newRole);
+      await loadBandDetails(bandForActions.id);
+      toast.success('Permissão atualizada');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar permissão');
+    } finally {
+      setUpdatingRoleFor(null);
+    }
+  };
+
   const handleInviteUser = async () => {
-    if (!selectedBand) return;
+    if (!bandForActions) return;
 
     try {
       setLoading(true);
       // Criar convite sem email específico (email genérico para permitir qualquer usuário)
-      const invite = await bandService.inviteUser(selectedBand.id, '');
-      await loadBandDetails(selectedBand.id);
+      const invite = await bandService.inviteUser(bandForActions.id, '');
+      await loadBandDetails(bandForActions.id);
       
       // Mostrar modal com QR code do convite
       setCreatedInvite({
@@ -239,13 +276,13 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (!selectedBand) return;
+    if (!bandForActions) return;
     if (!confirm('Tem certeza que deseja remover este membro?')) return;
 
     try {
       setLoading(true);
-      await bandService.removeMember(selectedBand.id, userId);
-      await loadBandDetails(selectedBand.id);
+      await bandService.removeMember(bandForActions.id, userId);
+      await loadBandDetails(bandForActions.id);
       toast.success('Membro removido com sucesso');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao remover membro');
@@ -255,13 +292,13 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
   };
 
   const handleCancelInvite = async (inviteId: string) => {
-    if (!selectedBand) return;
+    if (!bandForActions) return;
     if (!confirm('Tem certeza que deseja cancelar este convite?')) return;
 
     try {
       setLoading(true);
       await bandService.cancelInvite(inviteId);
-      await loadBandDetails(selectedBand.id);
+      await loadBandDetails(bandForActions.id);
       toast.success('Convite cancelado com sucesso');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao cancelar convite');
@@ -340,17 +377,17 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
         </>
       )}
 
-      {/* Detalhes da banda selecionada */}
-      {selectedBand && (
-        <div className="bg-[#1E1F25] border border-[#31333B] rounded-xl p-4 space-y-4 select-none">
+      {/* Detalhes da banda: quando no modal (bandFromParent) a seção aparece desde o início com loading dentro */}
+      {displayBand && (
+        <div className="bg-transparent border-0 rounded-xl p-0 space-y-4 select-none">
+          {!hideBandSelector && (
           <div className="flex items-start justify-between">
             <div>
-              <h4 className="text-sm font-bold text-white select-none">{selectedBand.name}</h4>
-              {selectedBand.description && (
-                <p className="text-xs text-white/70 mt-1 select-none">{selectedBand.description}</p>
+              <h4 className="text-sm font-bold text-white select-none">{displayBand.name}</h4>
+              {displayBand.description && (
+                <p className="text-xs text-white/70 mt-1 select-none">{displayBand.description}</p>
               )}
             </div>
-            {!hideBandSelector && (
               <button
                 onClick={handleDeleteBand}
                 className="p-1.5 hover:bg-red-600/20 text-red-400 rounded-lg transition-colors select-none"
@@ -360,8 +397,9 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
               </button>
             )}
           </div>
+          )}
 
-          {/* Membros */}
+          {/* Membros: loading fica aqui dentro para não “quebrar” o layout */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-white uppercase select-none">Membros</span>
@@ -423,15 +461,37 @@ const BandManager: React.FC<BandManagerProps> = ({ onBandSelect, selectedBandId,
                             <span className="text-xs text-white truncate select-none" title={displayName}>
                               {displayName}
                             </span>
-                            <span className="text-[10px] text-white/50 uppercase flex-shrink-0 select-none">
-                              {member.role}
-                              {currentUserId === member.user_id && (
-                                <span className="text-[#3057F2] ml-1">(Você)</span>
-                              )}
-                            </span>
+                            {bandForActions?.owner_id === member.user_id || member.role === 'owner' ? (
+                              <span className="text-[10px] text-white/50 uppercase flex-shrink-0 select-none">
+                                Proprietário
+                                {currentUserId === member.user_id && (
+                                  <span className="text-[#3057F2] ml-1">(Você)</span>
+                                )}
+                              </span>
+                            ) : canChangeRoles ? (
+                              <select
+                                value={member.role === 'admin' ? 'admin' : 'member'}
+                                onChange={(e) => handleRoleChange(member.user_id, e.target.value as 'admin' | 'member')}
+                                disabled={updatingRoleFor === member.user_id}
+                                className="text-[10px] bg-[#1E1F25] border border-[#31333B] rounded-lg px-2 py-1 text-white/90 focus:outline-none focus:border-[#3057F2] flex-shrink-0"
+                              >
+                                {ROLES.map((r) => (
+                                  <option key={r.value} value={r.value}>
+                                    {r.label}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-[10px] text-white/50 uppercase flex-shrink-0 select-none">
+                                {member.role === 'admin' ? 'Editor' : 'Membro'}
+                                {currentUserId === member.user_id && (
+                                  <span className="text-[#3057F2] ml-1">(Você)</span>
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        {member.role !== 'owner' && (
+                        {member.role !== 'owner' && bandForActions?.owner_id !== member.user_id && (
                           <button
                             onClick={() => handleRemoveMember(member.user_id)}
                             className="p-1 hover:bg-red-600/20 text-red-400 rounded transition-colors flex-shrink-0 ml-2 select-none"

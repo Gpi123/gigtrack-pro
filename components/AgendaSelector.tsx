@@ -14,6 +14,8 @@ interface AgendaSelectorProps {
   isSwitching?: boolean;
   onBandsCacheUpdate?: (forceRefresh?: boolean) => void;
   isBandOwner?: boolean;
+  /** Owner ou editor podem abrir Ajustes e editar shows; só owner pode excluir banda */
+  canEditBand?: boolean;
   /** Bandas do cache do App (evita fetch duplicado no mount) */
   bandsFromParent?: Band[];
   /** Chamado ao criar banda para atualização otimista no App */
@@ -29,6 +31,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
   isSwitching = false,
   onBandsCacheUpdate,
   isBandOwner = false,
+  canEditBand = false,
   bandsFromParent = [],
   onBandCreated
 }) => {
@@ -120,7 +123,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
         </button>
 
         {/* Botão de Ajustes - secundário (convite/edição está dentro do modal) */}
-        {selectedBandId && selectedBand && isBandOwner && (
+        {selectedBandId && selectedBand && canEditBand && (
           <button
             onClick={() => setShowInviteModal(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white hover:bg-[#1E1F25] border border-[#31333B] hover:border-[#3057F2]/40 transition-colors"
@@ -329,7 +332,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
             <div className="mb-6 p-4 bg-[#1E1F25] border border-[#31333B] rounded-xl">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-white select-none">Nome da Banda</h3>
-                {!showEditModal && (
+                {!showEditModal && isBandOwner && (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={loading}
@@ -406,14 +409,15 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
               )}
             </div>
 
-            {/* Seção de Convidar Membros */}
-            <div className="mb-4">
+            {/* Seção de Convidar Membros: sempre visível; loading fica dentro da seção */}
+            <div className="mb-4 p-4 bg-[#1E1F25] border border-[#31333B] rounded-xl shadow-xl">
               <h3 className="text-sm font-bold text-white mb-4 select-none">Membros e Convites</h3>
               <BandManager
-                key={selectedBand.id} // Forçar re-render quando a banda mudar
+                key={selectedBand.id}
                 onBandSelect={onBandSelect}
                 selectedBandId={selectedBandId}
                 hideBandSelector={true}
+                bandFromParent={selectedBand}
               />
             </div>
               </>

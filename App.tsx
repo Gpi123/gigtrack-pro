@@ -65,7 +65,19 @@ const App: React.FC = () => {
   const toast = useToast();
 
   const selectedBand = useMemo(() => (selectedBandId ? bandsCache.find(b => b.id === selectedBandId) ?? null : null), [selectedBandId, bandsCache]);
-  const isBandOwner = !!(selectedBandId && user && selectedBand?.owner_id === user.id);
+  const [myBandRole, setMyBandRole] = useState<'owner' | 'admin' | 'member' | null>(null);
+  const isBandOwner = myBandRole === 'owner' || !!(selectedBandId && user && selectedBand?.owner_id === user.id);
+  const isBandEditor = myBandRole === 'admin';
+  const canEditBand = isBandOwner || isBandEditor;
+
+  // Carregar minha role na banda (owner / editor / member) para permissões
+  useEffect(() => {
+    if (!selectedBandId || !user) {
+      setMyBandRole(null);
+      return;
+    }
+    bandService.getMyRoleInBand(selectedBandId).then(setMyBandRole).catch(() => setMyBandRole(null));
+  }, [selectedBandId, user?.id]);
 
   // Persistir selectedBandId no localStorage sempre que mudar
   useEffect(() => {
@@ -236,12 +248,12 @@ const App: React.FC = () => {
   // Quando membro está na agenda da banda: carregar gigs pessoais só para o resumo financeiro (cards sempre mostram "meus" valores)
   useEffect(() => {
     if (!user) return;
-    if (selectedBandId && !isBandOwner) {
+    if (selectedBandId && !canEditBand) {
       gigService.fetchGigs(null, user.id).then(setPersonalGigsForSummary).catch(() => setPersonalGigsForSummary([]));
     } else {
       setPersonalGigsForSummary(null);
     }
-  }, [user, selectedBandId, isBandOwner]);
+  }, [user, selectedBandId, canEditBand]);
 
   // Função para processar escolha do onboarding
   const handleOnboardingComplete = async (choice: 'personal' | 'band', bandName?: string) => {
@@ -828,7 +840,7 @@ const App: React.FC = () => {
   }, [personalGigsForSummary, selectedCalendarDate, startDate, endDate, isPeriodActive, filterStatus, searchQuery]);
 
   // Resumo financeiro: agenda pessoal ou owner na banda = stats da lista atual; membro na banda = stats da agenda pessoal dele
-  const gigsForStats = (selectedBandId && !isBandOwner && personalGigsForSummary !== null) ? filteredPersonalGigs : filteredGigs;
+  const gigsForStats = (selectedBandId && !canEditBand && personalGigsForSummary !== null) ? filteredPersonalGigs : filteredGigs;
   const stats = useMemo<FinancialStats>(() => {
     return gigsForStats.reduce((acc, gig) => {
       const val = Number(gig.value) || 0;
@@ -837,7 +849,7 @@ const App: React.FC = () => {
       acc.overallTotal += val;
       return acc;
     }, { totalReceived: 0, totalPending: 0, overallTotal: 0 });
-  }, [selectedBandId, isBandOwner, personalGigsForSummary, filteredPersonalGigs, filteredGigs]);
+  }, [selectedBandId, canEditBand, personalGigsForSummary, filteredPersonalGigs, filteredGigs]);
 
 
   const handleExportBackup = () => {
@@ -1103,6 +1115,7 @@ const App: React.FC = () => {
                       isSwitching={isSwitchingAgenda}
                       onBandsCacheUpdate={(forceRefresh) => refreshBandsCache(forceRefresh || false)}
                       isBandOwner={isBandOwner}
+                      canEditBand={canEditBand}
                       bandsFromParent={bandsCache}
                       onBandCreated={(band) => {
                         setBandsCache(prev => [band, ...prev]);
@@ -1110,7 +1123,7 @@ const App: React.FC = () => {
                       }}
                     />
                   </div>
-                  {(!selectedBandId || isBandOwner) && (
+                  {(!selectedBandId || canEditBand) && (
                     <button 
                       onClick={() => { 
                         if (!user) {
@@ -1176,7 +1189,7 @@ const App: React.FC = () => {
                       >
                         Pagos
                       </button>
-                      {filteredGigs.length > 0 && (!selectedBandId || isBandOwner) && (
+                      {filteredGigs.length > 0 && (!selectedBandId || canEditBand) && (
                         <button
                           onClick={() => {
                             if (isMultiSelectMode) {
@@ -1252,7 +1265,7 @@ const App: React.FC = () => {
                     setSelectedGigIds(newSet);
                   }}
                   isBandAgenda={!!selectedBandId}
-                  isBandOwner={isBandOwner}
+                  isBandOwner={canEditBand}
                 />
               )}
             </div>

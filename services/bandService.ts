@@ -339,6 +339,42 @@ export const bandService = {
     if (error) throw error;
   },
 
+  // Retorna a role do usuário atual na banda: owner (dono), admin (editor) ou member (membro)
+  getMyRoleInBand: async (bandId: string): Promise<'owner' | 'admin' | 'member' | null> => {
+    const user = await getCachedUser();
+    if (!user) return null;
+    const { data: band } = await supabase.from('bands').select('owner_id').eq('id', bandId).single();
+    if (band?.owner_id === user.id) return 'owner';
+    const { data: member } = await supabase
+      .from('band_members')
+      .select('role')
+      .eq('band_id', bandId)
+      .eq('user_id', user.id)
+      .single();
+    if (member?.role === 'admin' || member?.role === 'member') return member.role;
+    return null;
+  },
+
+  // Alterar role de um membro (apenas owner ou editor podem; não altera owner)
+  updateMemberRole: async (bandId: string, userId: string, role: 'admin' | 'member'): Promise<void> => {
+    const user = await getCachedUser();
+    if (!user) throw new Error('User not authenticated');
+    const myRole = await bandService.getMyRoleInBand(bandId);
+    if (myRole !== 'owner' && myRole !== 'admin') {
+      throw new Error('Apenas o proprietário ou um editor podem alterar permissões');
+    }
+    const { data: band } = await supabase.from('bands').select('owner_id').eq('id', bandId).single();
+    if (band?.owner_id === userId) {
+      throw new Error('Não é possível alterar a permissão do proprietário');
+    }
+    const { error } = await supabase
+      .from('band_members')
+      .update({ role })
+      .eq('band_id', bandId)
+      .eq('user_id', userId);
+    if (error) throw error;
+  },
+
   // Atualizar banda
   updateBand: async (bandId: string, updates: { name?: string; description?: string }): Promise<Band> => {
     const user = await getCachedUser();
