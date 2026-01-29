@@ -1284,7 +1284,10 @@ const App: React.FC = () => {
             handleSaveGig(gig);
             setPreSelectedDate(null);
           }} 
-          initialData={editingGig || (preSelectedDate ? { date: preSelectedDate } : null)}
+          initialData={editingGig || {
+            ...(preSelectedDate && { date: preSelectedDate }),
+            ...(selectedBandId && { band_name: bandsCache.find(b => b.id === selectedBandId)?.name ?? '' })
+          }}
           isLoading={isSyncing}
         />
       )}
