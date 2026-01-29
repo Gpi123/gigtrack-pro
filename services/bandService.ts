@@ -46,40 +46,39 @@ export const bandService = {
 
     if (!user) throw new Error('User not authenticated');
 
-    // Buscar bandas onde o usuário é owner
-    const query1Start = performance.now();
-    const { data: ownedBands, error: ownedError } = await supabase
-      .from('bands')
-      .select('*')
-      .eq('owner_id', user.id)
-      .order('created_at', { ascending: false });
-    const query1Time = performance.now() - query1Start;
-    
-    console.log(`📊 [PERF] fetchUserBands - Query bandas próprias - ${query1Time.toFixed(2)}ms`, {
-      count: ownedBands?.length || 0
-    });
+    // Buscar em paralelo: bandas próprias + bandas como membro (reduz tempo total)
+    const queryStart = performance.now();
+    const [ownedResult, memberResult] = await Promise.all([
+      supabase
+        .from('bands')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('band_members')
+        .select('band_id, bands(*)')
+        .eq('user_id', user.id)
+    ]);
+    const queryTime = performance.now() - queryStart;
+
+    const ownedBands = ownedResult.data;
+    const ownedError = ownedResult.error;
+    const memberBands = memberResult.data;
+    const memberError = memberResult.error;
 
     if (ownedError) {
       console.error(`❌ [PERF] Erro ao buscar bandas próprias:`, ownedError);
       throw ownedError;
     }
-
-    // Buscar bandas onde o usuário é membro
-    const query2Start = performance.now();
-    const { data: memberBands, error: memberError } = await supabase
-      .from('band_members')
-      .select('band_id, bands(*)')
-      .eq('user_id', user.id);
-    const query2Time = performance.now() - query2Start;
-    
-    console.log(`📊 [PERF] fetchUserBands - Query bandas como membro - ${query2Time.toFixed(2)}ms`, {
-      count: memberBands?.length || 0
-    });
-
     if (memberError) {
       console.error(`❌ [PERF] Erro ao buscar bandas como membro:`, memberError);
       throw memberError;
     }
+
+    console.log(`📊 [PERF] fetchUserBands - Queries paralelas - ${queryTime.toFixed(2)}ms`, {
+      owned: ownedBands?.length || 0,
+      member: memberBands?.length || 0
+    });
 
     // Combinar e remover duplicatas
     const combineStart = performance.now();
@@ -114,18 +113,8 @@ export const bandService = {
     
     const totalTime = performance.now() - startTime;
     console.log(`✅ [PERF] fetchUserBands CONCLUÍDO - Total: ${totalTime.toFixed(2)}ms`, {
-      breakdown: {
-        auth: `${authTime.toFixed(2)}ms`,
-        query1_owned: `${query1Time.toFixed(2)}ms`,
-        query2_member: `${query2Time.toFixed(2)}ms`,
-        combine: `${combineTime.toFixed(2)}ms`,
-        total: `${totalTime.toFixed(2)}ms`
-      },
-      counts: {
-        owned: ownedBands?.length || 0,
-        member: memberBands?.length || 0,
-        total: sortedBands.length
-      }
+      breakdown: { auth: `${authTime.toFixed(2)}ms`, queries: `${queryTime.toFixed(2)}ms`, combine: `${combineTime.toFixed(2)}ms`, total: `${totalTime.toFixed(2)}ms` },
+      counts: { owned: ownedBands?.length || 0, member: memberBands?.length || 0, total: sortedBands.length }
     });
 
     return sortedBands;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, ChevronDown, Users, User, Plus, UserPlus, X, Loader2, Settings, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { bandService } from '../services/bandService';
-import { getCachedUserBands } from '../services/bandsCache';
 import { Band } from '../types';
 import { useToast } from './Toast';
 import BandManager from './BandManager';
@@ -14,8 +13,11 @@ interface AgendaSelectorProps {
   selectedBandName?: string | null;
   isSwitching?: boolean;
   onBandsCacheUpdate?: (forceRefresh?: boolean) => void;
-  /** Apenas o owner vê o botão Ajustes (convidar, editar banda, etc.) */
   isBandOwner?: boolean;
+  /** Bandas do cache do App (evita fetch duplicado no mount) */
+  bandsFromParent?: Band[];
+  /** Chamado ao criar banda para atualização otimista no App */
+  onBandCreated?: (band: Band) => void;
 }
 
 const AgendaSelector: React.FC<AgendaSelectorProps> = ({
@@ -26,10 +28,12 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
   selectedBandName,
   isSwitching = false,
   onBandsCacheUpdate,
-  isBandOwner = false
+  isBandOwner = false,
+  bandsFromParent = [],
+  onBandCreated
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [bands, setBands] = useState<Band[]>([]);
+  const bands = bandsFromParent;
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -40,20 +44,13 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
+  // Se a banda selecionada foi excluída (não está mais na lista), redirecionar para agenda pessoal
   useEffect(() => {
-    loadBands();
-  }, []);
-
-  // Atualizar selectedBand quando bands mudar (após edição)
-  useEffect(() => {
-    if (selectedBandId) {
-      const updatedBand = bands.find(b => b.id === selectedBandId);
-      if (updatedBand) {
-        // Atualizar o nome no título se a banda foi editada
-        // O selectedBand será atualizado automaticamente pelo getCurrentAgendaName
-      }
+    if (selectedBandId && bands.length > 0 && !bands.find(b => b.id === selectedBandId)) {
+      onBandSelect(null);
+      toast.info('A banda foi excluída. Você foi redirecionado para sua agenda pessoal.');
     }
-  }, [bands, selectedBandId]);
+  }, [bands, selectedBandId, onBandSelect]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -69,71 +66,6 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
     }
   }, [isOpen]);
 
-  const loadBands = async () => {
-    const startTime = performance.now();
-    console.log(`🔍 [PERF] AgendaSelector.loadBands INICIADO`, {
-      timestamp: new Date().toISOString()
-    });
-
-    try {
-      const setLoadingStart = performance.now();
-      setLoading(true);
-      console.log(`⚡ [PERF] AgendaSelector.setLoading(true) - ${(performance.now() - setLoadingStart).toFixed(2)}ms`);
-
-      // Obter userId do cache de auth
-      const { getCachedUser } = await import('../services/authCache');
-      const user = await getCachedUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const fetchStart = performance.now();
-      const userBands = await getCachedUserBands(user.id);
-      const fetchTime = performance.now() - fetchStart;
-      
-      console.log(`📦 [PERF] AgendaSelector.fetchUserBands - ${fetchTime.toFixed(2)}ms`, {
-        count: userBands.length
-      });
-
-      const setBandsStart = performance.now();
-      setBands(userBands);
-      console.log(`💾 [PERF] AgendaSelector.setBands() - ${(performance.now() - setBandsStart).toFixed(2)}ms`);
-      
-      // Verificar se a banda selecionada ainda existe
-      if (selectedBandId) {
-        const checkStart = performance.now();
-        const updatedBand = userBands.find(b => b.id === selectedBandId);
-        const checkTime = performance.now() - checkStart;
-        console.log(`🔍 [PERF] AgendaSelector.verificar banda selecionada - ${checkTime.toFixed(2)}ms`);
-
-        if (!updatedBand) {
-          // Banda foi deletada, redirecionar para agenda pessoal
-          console.log(`⚠️ [PERF] Banda selecionada não encontrada, redirecionando`);
-          onBandSelect(null);
-          toast.info('A banda foi excluída. Você foi redirecionado para sua agenda pessoal.');
-        }
-      }
-
-      const totalTime = performance.now() - startTime;
-      console.log(`✅ [PERF] AgendaSelector.loadBands CONCLUÍDO - Total: ${totalTime.toFixed(2)}ms`, {
-        breakdown: {
-          fetch: `${fetchTime.toFixed(2)}ms`,
-          setBands: `${(performance.now() - setBandsStart).toFixed(2)}ms`,
-          total: `${totalTime.toFixed(2)}ms`
-        },
-        bandsCount: userBands.length
-      });
-    } catch (error: any) {
-      const totalTime = performance.now() - startTime;
-      console.error(`❌ [PERF] AgendaSelector.loadBands ERRO - Total: ${totalTime.toFixed(2)}ms`, error);
-      toast.error(error.message || 'Erro ao carregar bandas');
-    } finally {
-      const setLoadingStart = performance.now();
-      setLoading(false);
-      console.log(`⚡ [PERF] AgendaSelector.setLoading(false) - ${(performance.now() - setLoadingStart).toFixed(2)}ms`);
-    }
-  };
-
   const handleCreateBand = async () => {
     if (!newBandName.trim()) {
       toast.error('Nome da banda é obrigatório');
@@ -143,11 +75,8 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
     try {
       setLoading(true);
       const band = await bandService.createBand(newBandName.trim());
-      await loadBands(); // Recarregar lista completa de bandas
-      // Atualizar cache no App (forçar refresh após criar banda)
-      if (onBandsCacheUpdate) {
-        onBandsCacheUpdate(true); // forceRefresh = true
-      }
+      onBandCreated?.(band);
+      onBandsCacheUpdate?.(true);
       setShowCreateModal(false);
       setNewBandName('');
       onBandSelect(band.id);
@@ -396,11 +325,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                       try {
                         setLoading(true);
                         await bandService.deleteBand(selectedBand.id);
-                        await loadBands();
-                        // Atualizar cache no App (forçar refresh após deletar banda)
-                        if (onBandsCacheUpdate) {
-                          onBandsCacheUpdate(true);
-                        }
+                        onBandsCacheUpdate?.(true);
                         onBandSelect(null); // Redirecionar para agenda pessoal
                         setShowInviteModal(false);
                         setShowDeleteConfirm(false);
@@ -457,11 +382,7 @@ const AgendaSelector: React.FC<AgendaSelectorProps> = ({
                         try {
                           setLoading(true);
                           await bandService.updateBand(selectedBand.id, { name: editBandName.trim() });
-                          await loadBands(); // Recarregar lista para atualizar o nome no dropdown
-                          // Atualizar cache no App (forçar refresh após editar banda)
-                          if (onBandsCacheUpdate) {
-                            onBandsCacheUpdate(true);
-                          }
+                          onBandsCacheUpdate?.(true);
                           setShowEditModal(false);
                           toast.success('Nome da banda atualizado!');
                         } catch (error: any) {

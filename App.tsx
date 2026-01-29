@@ -1101,6 +1101,11 @@ const App: React.FC = () => {
                       isSwitching={isSwitchingAgenda}
                       onBandsCacheUpdate={(forceRefresh) => refreshBandsCache(forceRefresh || false)}
                       isBandOwner={isBandOwner}
+                      bandsFromParent={bandsCache}
+                      onBandCreated={(band) => {
+                        setBandsCache(prev => [band, ...prev]);
+                        refreshBandsCache(true);
+                      }}
                     />
                   </div>
                   {!isPeriodActive && !selectedCalendarDate && (!selectedBandId || isBandOwner) && (
