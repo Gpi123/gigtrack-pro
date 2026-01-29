@@ -1,5 +1,5 @@
 -- Quando um novo membro é adicionado à banda, copiar todos os shows já existentes da banda
--- para a agenda pessoal desse membro (mesma lógica do trigger 017, mas para gigs existentes).
+-- para a agenda pessoal desse membro (com nome da banda preenchido).
 
 CREATE OR REPLACE FUNCTION public.copy_band_gigs_to_new_member()
 RETURNS TRIGGER
@@ -9,10 +9,11 @@ SET search_path = public
 AS $$
 DECLARE
   band_owner_id UUID;
+  band_name_val TEXT;
   band_gig RECORD;
 BEGIN
-  -- Só copiar se não for o owner (owner já tem os shows na agenda da banda)
-  SELECT owner_id INTO band_owner_id FROM public.bands WHERE id = NEW.band_id;
+  -- Não copiar quando é o owner sendo adicionado (criação da banda; ainda não há shows)
+  SELECT owner_id, name INTO band_owner_id, band_name_val FROM public.bands WHERE id = NEW.band_id;
   IF band_owner_id IS NULL OR NEW.user_id = band_owner_id THEN
     RETURN NEW;
   END IF;
@@ -42,7 +43,7 @@ BEGIN
       0,
       'PENDING',
       band_gig.notes,
-      band_gig.band_name
+      COALESCE(band_gig.band_name, band_name_val)
     );
   END LOOP;
 
